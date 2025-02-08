@@ -14,6 +14,13 @@ declare global {
   }
 }
 
+
+declare module "express-session" {
+  interface SessionData {
+    position?: string;
+  }
+}
+
 let port = 3000
 const app: Express = express();
 app.use(bodyParser.json());  // Parse JSON request bodies
@@ -31,8 +38,23 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Google Authentication
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google', (req: Request, res: Response, next: NextFunction) => {
+    const position = req.query.position as string;
+    console.log(position)
+    if (position !== 'teacher' && position !== 'student') {
+      res.status(400).json({ error: 'Invalid position' });  
+    }
+
+    if (!req.session) {
+      res.status(500).json({ error: 'Session not initialized' });
+    }
+
+    req.session.position = position;
+    next();
+    
+  },passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
 
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/login' }),
@@ -64,10 +86,6 @@ app.get('/restricted', async (req : Request, res :Response) => {
 
 
 
-
-
-
-
 // get_classrooms endpoint
 const getClassroomsByTeacher = async (teacherId: number) => {
   try {
@@ -84,19 +102,22 @@ const getClassroomsByTeacher = async (teacherId: number) => {
 };
 
 app.get('/getClassroomsByTeacher', async (req : Request, res :Response) => {
-  const teacherId = Number(req.query.teacherId as string);
+  if (req.user !== undefined && req.isAuthenticated()) {
 
-  if (isNaN(teacherId)) {
-    res.status(500).json({error: "We need a number"})
-  }  
-
-  try {
-    const classrooms = await getClassroomsByTeacher(teacherId);
-    res.json(classrooms);
-  } catch (error) {
-    console.error('Error fetching classrooms:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const teacherId = Number(req.user.googleId as string);
+    if (isNaN(teacherId)) {
+      res.status(500).json({error: "We need a number"})
+    }  
+  
+    try {
+      const classrooms = await getClassroomsByTeacher(teacherId);
+      res.json(classrooms);
+    } catch (error) {
+      console.error('Error fetching classrooms:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
+
 });
 
 // get Quizes in classroom endpoint 
@@ -115,18 +136,20 @@ const getQuizesByClassroom = async (classroomId: number) => {
 };
 
 app.get('/getQuizesByClassroom', async (req: Request, res: Response) => {
-  const classroomId = Number(req.query.classroomId);
-
-  if (isNaN(classroomId)) {
-    res.status(500).json({error: "We need a number"})
-  }  
-
-  try {
-    const quizzes = await getQuizesByClassroom(classroomId);
-    res.json(quizzes);
-  } catch (error) {
-    console.error('Error fetching classrooms:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+  if (req.user !== undefined && req.isAuthenticated()) {
+    const classroomId = Number(req.query.classroomId);
+  
+    if (isNaN(classroomId)) {
+      res.status(500).json({error: "We need a number"})
+    }  
+  
+    try {
+      const quizzes = await getQuizesByClassroom(classroomId);
+      res.json(quizzes);
+    } catch (error) {
+      console.error('Error fetching classrooms:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
 });
 

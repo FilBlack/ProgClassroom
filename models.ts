@@ -8,14 +8,58 @@ const sequelize = new Sequelize({
 });
 
 // Define User model with proper types
-class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+class ProgUser extends Model<InferAttributes<ProgUser>, InferCreationAttributes<ProgUser>> {
   declare id: CreationOptional<number>; // Auto-incremented ID
   declare googleId: string;
   declare name: string;
   declare email: string | null;
   declare profilePicture: string | null;
+  declare position: string 
 }
-User.init(
+ProgUser.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    googleId: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    profilePicture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    position: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    }
+  },
+  {
+    sequelize,
+    modelName: 'User',
+  }
+);
+
+class Teacher extends Model<InferAttributes<Teacher>, InferCreationAttributes<Teacher>> {
+  declare id: CreationOptional<number>;
+  declare googleId: string;
+  declare name: string;
+  declare email: string | null;
+  declare profilePicture: string | null;
+}
+
+Teacher.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -42,45 +86,19 @@ User.init(
   },
   {
     sequelize,
-    modelName: 'User',
-  }
-);
-
-// Define Teacher model
-class Teacher extends Model<InferAttributes<Teacher>, InferCreationAttributes<Teacher>> {
-  declare id: CreationOptional<number>;
-  declare login: string;
-  declare heslo: string;
-}
-Teacher.init(
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    login: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    heslo: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-  },
-  {
-    sequelize,
     modelName: 'Teacher',
   }
 );
 
-// Define Student model
+// Define Student model with the same structure as ProgUser
 class Student extends Model<InferAttributes<Student>, InferCreationAttributes<Student>> {
   declare id: CreationOptional<number>;
-  declare login: string;
-  declare heslo: string;
-  declare full_name: string;
+  declare googleId: string;
+  declare name: string;
+  declare email: string | null;
+  declare profilePicture: string | null;
 }
+
 Student.init(
   {
     id: {
@@ -88,17 +106,22 @@ Student.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    login: {
+    googleId: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+    },
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    heslo: {
+    email: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    full_name: {
+    profilePicture: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {
@@ -263,4 +286,4 @@ sequelize.sync({ alter: true }).then(() => {
   console.log('Database & tables created!');
 });
 
-export { sequelize, User, Teacher, Student, Classroom, Quiz, QuizStudent, ClassroomStudents };
+export { sequelize, ProgUser, Teacher, Student, Classroom, Quiz, QuizStudent, ClassroomStudents };

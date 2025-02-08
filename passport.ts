@@ -1,8 +1,8 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import 'dotenv-esm/config';
-import {sequelize, User} from './models.js'
-type PassportUser = InstanceType<typeof User>;
+import {sequelize, ProgUser} from './models.js'
+type PassportUser = InstanceType<typeof ProgUser>;
 
 
 const clientSecret: string = String(process.env.GOOGLE_CLIENT_SECRET);
@@ -13,24 +13,31 @@ passport.use(
         clientID: '271759399576-itntdu7bjsl48t2ddpfia49tu0r75aqh.apps.googleusercontent.com',
         clientSecret: clientSecret,
         callbackURL: '/auth/google/callback',
+        passReqToCallback: true,
         scope: ['profile', 'email']
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
         try {
             // Check if the user already exists in the database
-            let user: PassportUser | null = await User.findOne({ where: { googleId: profile.id } });
+           
+            if (req.session.position) {
+                let user: PassportUser | null = await ProgUser.findOne({ where: { googleId: profile.id } });
+                const position:string = req.session.position
+                if (!user) {
+                    // Create a new user if not found
+                    user = await ProgUser.create({
+                        googleId: profile.id,
+                        name: profile.displayName,
+                        email: profile.emails?.[0].value || null,
+                        profilePicture: profile.photos?.[0].value || null,
+                        position: position
+                    });
+                }
+                const validUser: PassportUser = user;
+                return done(null, user);  // Pass the user object to done
+            } else {
 
-            if (!user) {
-                // Create a new user if not found
-                user = await User.create({
-                    googleId: profile.id,
-                    name: profile.displayName,
-                    email: profile.emails?.[0].value || null,
-                    profilePicture: profile.photos?.[0].value || null 
-                });
             }
-            const validUser: PassportUser = user;
-            return done(null, user);  // Pass the user object to done
         } catch (err) { 
             return done(err);  // Pass the error to done in case of failure
         }
@@ -44,7 +51,7 @@ passport.serializeUser(((user: PassportUser, done: (err: any, id?: number) => vo
 
 passport.deserializeUser(async (id : number, done) => {
     try {
-        const user : PassportUser | null = await User.findByPk(id);  // Retrieve the user by primary key
+        const user : PassportUser | null = await ProgUser.findByPk(id);  // Retrieve the user by primary key
         done(null, user);  
     } catch (err) {
         done(err);
