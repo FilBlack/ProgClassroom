@@ -8,40 +8,39 @@
         studentsCount: number;
     }
 
-    async function fetchClassroomsByTeacher(teacherId: number): Promise<Classroom[] | { error: string }> {
-    try {
-        const response = await fetch(`/getClassroomsByTeacher?teacherId=${teacherId}`);
-
-        if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
+    function fetchClassroomsByTeacher(): Promise<Classroom[] | { error: string }> {
+        return fetch('/getClassroomsByTeacher')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => data)
+            .catch(error => {
+                console.error('Error fetching classrooms:', error);
+                return { error: 'Failed to fetch classrooms' };
+            });
         }
 
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('Error fetching classrooms:', error);
-        return { error: 'Failed to fetch classrooms' };
+    let classrooms : Classroom[]
+    fetchClassroomsByTeacher().then(classroom_data => {
+        if (!('error' in classroom_data)) {
+            classrooms = classroom_data
+        } else {
+            console.log("Error fetching classrooms")
+        }
+    })
+    
+    function classroomRedirect(classroom_id: string) {
+        sessionStorage.setItem('currentClassroom', classroom_id);
+        window.location.href = 'teacher_classroom'
     }
-    }
-
-
-    // fetchClassroomsByTeacher(teacherId)
-    // .then((data) => {
-    //     if ('error' in data) {
-    //     console.error('Error:', data.error);
-    //     } else {
-
-
-
-
-    //     }
-    // })
-    // .catch((err) => console.error('Unexpected error:', err));
 </script>
 <Header />
 
-
-
-
+{#each classrooms as room, i}
+    <button onclick={classroomRedirect}>{room.name}</button>
+{/each}
 
 <Footer />

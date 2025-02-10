@@ -57,33 +57,15 @@ app.get('/auth/google', (req: Request, res: Response, next: NextFunction) => {
 
 
 app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
+  passport.authenticate('google', { failureRedirect: '/' }),
   function(req, res) {
-    res.redirect('/');
-  });
-
-app.get('/restricted', async (req : Request, res :Response) => {
-  if (req.user !== undefined) {
-    req.user.id
-    req.user.googleId
-  }
-
-  
-  try {
-
-    if (req.isAuthenticated()) {
-      res.status(200).json({msg: "You are authed"})
-    }  
-    else {
-      res.status(200).json({msg: "You are not authed!!"})
+    console.log(req.user.position)
+    if (req.user.position === 'teacher') {
+      res.redirect('/teacher_classroom_list');
+    } else {
+      res.redirect('/student_classroom_list')
     }
-  
-  } catch (error) {
-    console.error('Error authing:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
+  });
 
 
 // get_classrooms endpoint
@@ -153,8 +135,71 @@ app.get('/getQuizesByClassroom', async (req: Request, res: Response) => {
   }
 });
 
+const getStudentsByClassroom = async (classroomId: number): Promise<ProgUser[]> => {
+  try {
+    const studentClassroomConnections = await ClassroomStudents.findAll({
+      where: {
+        f_classroom_id: classroomId,
+      },
+    });
+    var students: ProgUser[] = [] 
 
+    for (const connection of studentClassroomConnections) {
+      let student = await ProgUser.findAll({
+        where: { googleId: connection.f_student_id }
+      });
 
+      if (student.length > 0) {
+        students.push(student[0]);
+      }
+    }
+
+    return students;
+  } catch (error) {
+    console.error('Error fetching students by classroom:', error);
+    throw error;
+  }
+};
+
+app.get('/getStudentsByClassroom', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated()) {
+    const classroomId = Number(req.query.classroomId);
+  
+    if (isNaN(classroomId)) {
+      res.status(500).json({error: "We need a number"})
+    }  
+  
+    try {
+      const students = await getStudentsByClassroom(classroomId);
+      res.json(students);
+    } catch (error) {
+      console.error('Error fetching students by classroom:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+});
+
+app.post('/addStudentsToClassroom'), async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated()) {
+    try {
+
+      const studentList: string[] = req.body.studentList;
+      const currentClassroom: string = req.body.currentClassroom
+      const insertPromises = studentList.map(studentId => 
+        ClassroomStudents.create({
+          f_classroom_id: Number(currentClassroom), 
+          f_student_id: Number(studentId)
+        })
+      );
+      await Promise.all(insertPromises);
+      
+      res.status(201).json({ message: 'Students added to classroom successfully' });
+  } catch (error) {
+    console.error('Error adding students to classroom:', error);
+    res.status(500).json({ error: 'Failed to add students to classroom' });
+  }
+  }
+}
 
 
 

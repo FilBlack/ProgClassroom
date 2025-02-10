@@ -11,5 +11,8 @@ export default defineConfig({
 			rewrite: path => path.replace(/^\/api/, '')
 		  }
 		}
-	}
+	},
+	resolve: {
+		extensions: ['.svelte', 'svelte.ts', '.js', 'svelte.js']
+	  }
 });

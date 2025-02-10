@@ -4,8 +4,11 @@
     import Footer from "../lib/Footer.svelte"
 
     function teacher_login() {
-        console.log("new here")
-        window.location.href = 'http://localhost:3000/auth/google/?position=student';
+        window.location.href = 'auth/google/?position=teacher';
+        
+    }
+    function student_login() {
+        window.location.href = 'auth/google/?position=student';
         
     }
 </script>
@@ -13,13 +16,9 @@
 
 Are you a student or a teacher? 
 
+<button id="teacher_auth" onclick={teacher_login}>Teacher</button>
 
-
-HII THIS IS THE NEWEST VERSIOSNODSFSDIFSODNFdsf
-sfdsfdsf
-<button id="teacher_auth">Teacher</button>
-
-<button id="student_auth" onclick={teacher_login}>Student</button>
+<button id="student_auth" onclick={student_login}>Student</button>
 <Footer />
 
 

@@ -4,7 +4,7 @@
     "allowJs": true,
     "checkJs": false,
     "esModuleInterop": true,
-	"allowSyntheticDefaultImports": true,
+	  "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -13,6 +13,8 @@
     "moduleResolution": "node",
     "module": "ESNext",
     "target": "es2020",
+    "useDefineForClassFields": true,
+    "isolatedModules": true,
 	"outDir": "./src/output",
 	"noEmit": false,
 	"verbatimModuleSyntax": true
