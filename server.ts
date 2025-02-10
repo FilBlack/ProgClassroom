@@ -5,7 +5,7 @@ import session from 'express-session'
 import passport from 'passport'
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'; 
-import { sequelize, Teacher, Student, Classroom, Quiz, QuizStudent, ClassroomStudents, ProgUser} from './models.js';
+import { sequelize, Classroom, Quiz, QuizStudent, ClassroomStudents, ProgUser} from './models.js';
 import './passport.js'
 
 declare global {
@@ -69,7 +69,7 @@ app.get('/auth/google/callback',
 
 
 // get_classrooms endpoint
-const getClassroomsByTeacher = async (teacherId: number) => {
+const getClassroomsByTeacher = async (teacherId: string) => {
   try {
     const classrooms = await Classroom.findAll({
       where: {
@@ -86,10 +86,7 @@ const getClassroomsByTeacher = async (teacherId: number) => {
 app.get('/getClassroomsByTeacher', async (req : Request, res :Response) => {
   if (req.user !== undefined && req.isAuthenticated()) {
 
-    const teacherId = Number(req.user.googleId as string);
-    if (isNaN(teacherId)) {
-      res.status(500).json({error: "We need a number"})
-    }  
+    const teacherId = String(req.user.googleId as string);
   
     try {
       const classrooms = await getClassroomsByTeacher(teacherId);
@@ -98,6 +95,8 @@ app.get('/getClassroomsByTeacher', async (req : Request, res :Response) => {
       console.error('Error fetching classrooms:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
   }
 
 });
@@ -132,6 +131,8 @@ app.get('/getQuizesByClassroom', async (req: Request, res: Response) => {
       console.error('Error fetching classrooms:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
   }
 });
 
@@ -176,11 +177,13 @@ app.get('/getStudentsByClassroom', async (req: Request, res: Response) => {
       console.error('Error fetching students by classroom:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
   }
 });
 
-app.post('/addStudentsToClassroom'), async (req: Request, res: Response) => {
-  if (req.user !== undefined && req.isAuthenticated()) {
+app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
     try {
 
       const studentList: string[] = req.body.studentList;
@@ -198,22 +201,32 @@ app.post('/addStudentsToClassroom'), async (req: Request, res: Response) => {
     console.error('Error adding students to classroom:', error);
     res.status(500).json({ error: 'Failed to add students to classroom' });
   }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
   }
-}
+})
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.post('/addClassroom', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const classroomName: string = req.body.classroomString;
+      const teacherId: string = req.user.googleId
+      Classroom.create({
+        name: String(classroomName), 
+        teacher_id: String(teacherId)
+      }).then(student => {
+        console.log('Inserted:', student.toJSON());
+      })
+      .catch(err => console.error('Error:', err));
+      res.status(201).json({ message: 'Students added to classroom successfully' });
+    } catch (error) {
+      console.error('Error adding students to classroom:', error);
+      res.status(500).json({ error: 'Failed to add students to classroom' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
 
 
 
@@ -231,8 +244,21 @@ app.use(express.static('build/client'));
 // Eats all the remaining routes
 app.use(handler)
 
-sequelize.sync().then(() => {
-  app.listen(port, () => {
-      console.log(`Server running at http://localhost:${port}`);
-  });
+
+// For debuggin to print all paths 
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(middleware.route.path);
+  } else if (middleware.name === 'router') {
+    middleware.handle.stack.forEach((handler) => {
+      if (handler.route) {
+        console.log(handler.route.path);
+      }
+    });
+  }
+});
+
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
     import Header from "../../lib/Header.svelte"
     import Footer from "../../lib/Footer.svelte"
-
+    import { onMount } from 'svelte'
 
     interface ProgUser {
             id: number,
@@ -11,32 +11,39 @@
             profilePicture: string,
             position: string,
     }
+    
+    let students: ProgUser[];
 
-    let currentClassroom: string = sessionStorage.getItem('currentClassroom')
-    function fetchStudentsByClassroom(): Promise<ProgUser[] | { error: string }> {
+    onMount(() => {
+    const currentClassroom = sessionStorage.getItem('currentClassroom');
+    if (!currentClassroom) {
+        console.error('No currentClassroom found in sessionStorage.');
+        return;
+    }
+
+    async function fetchStudentsByClassroom(): Promise<ProgUser[] | { error: string }> {
         return fetch(`/getStudentsByClassroom?classroomId=${currentClassroom}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.status} ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => data)
-            .catch(error => {
-                console.error('Error fetching students by classroom:', error);
-                return { error: 'Failed to fetch students by classroom' };
-            });
-        }
+        .then(response => {
+            if (!response.ok) {
+            throw new Error(`Error: ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => data)
+        .catch(error => {
+            console.error('Error fetching students by classroom:', error);
+            return { error: 'Failed to fetch students by classroom' };
+        });
+    }
 
-    let students : ProgUser[]
     fetchStudentsByClassroom().then(student_data => {
         if (!('error' in student_data)) {
-            students = student_data
+        students = student_data;
         } else {
-            console.log("Error fetching students by classroom")
+        console.log("Error fetching students by classroom");
         }
-    })
-
+    });
+    });
     let StudentAddMessageActive: boolean = false
 
     function AddStudents(studentString:string) {

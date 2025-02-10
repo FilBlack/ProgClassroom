@@ -51,90 +51,90 @@ ProgUser.init(
   }
 );
 
-class Teacher extends Model<InferAttributes<Teacher>, InferCreationAttributes<Teacher>> {
-  declare id: CreationOptional<number>;
-  declare googleId: string;
-  declare name: string;
-  declare email: string | null;
-  declare profilePicture: string | null;
-}
+// class Teacher extends Model<InferAttributes<Teacher>, InferCreationAttributes<Teacher>> {
+//   declare id: CreationOptional<number>;
+//   declare googleId: string;
+//   declare name: string;
+//   declare email: string | null;
+//   declare profilePicture: string | null;
+// }
 
-Teacher.init(
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    googleId: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: false,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    profilePicture: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-  },
-  {
-    sequelize,
-    modelName: 'Teacher',
-  }
-);
+// Teacher.init(
+//   {
+//     id: {
+//       type: DataTypes.INTEGER,
+//       autoIncrement: true,
+//       primaryKey: true,
+//     },
+//     googleId: {
+//       type: DataTypes.STRING,
+//       unique: true,
+//       allowNull: false,
+//     },
+//     name: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//     },
+//     email: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//     },
+//     profilePicture: {
+//       type: DataTypes.STRING,
+//       allowNull: true,
+//     },
+//   },
+//   {
+//     sequelize,
+//     modelName: 'Teacher',
+//   }
+// );
 
 // Define Student model with the same structure as ProgUser
-class Student extends Model<InferAttributes<Student>, InferCreationAttributes<Student>> {
-  declare id: CreationOptional<number>;
-  declare googleId: string;
-  declare name: string;
-  declare email: string | null;
-  declare profilePicture: string | null;
-}
+// class Student extends Model<InferAttributes<Student>, InferCreationAttributes<Student>> {
+//   declare id: CreationOptional<number>;
+//   declare googleId: string;
+//   declare name: string;
+//   declare email: string | null;
+//   declare profilePicture: string | null;
+// }
 
-Student.init(
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    googleId: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: false,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    profilePicture: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-  },
-  {
-    sequelize,
-    modelName: 'Student',
-  }
-);
+// Student.init(
+//   {
+//     id: {
+//       type: DataTypes.INTEGER,
+//       autoIncrement: true,
+//       primaryKey: true,
+//     },
+//     googleId: {
+//       type: DataTypes.STRING,
+//       unique: true,
+//       allowNull: false,
+//     },
+//     name: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//     },
+//     email: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//     },
+//     profilePicture: {
+//       type: DataTypes.STRING,
+//       allowNull: true,
+//     },
+//   },
+//   {
+//     sequelize,
+//     modelName: 'Student',
+//   }
+// );
 
 // Define Classroom model
 class Classroom extends Model<InferAttributes<Classroom>, InferCreationAttributes<Classroom>> {
   declare id: CreationOptional<number>;
   declare name: string;
-  declare teacher_id: number;
+  declare teacher_id: string;
 }
 Classroom.init(
   {
@@ -148,12 +148,13 @@ Classroom.init(
       allowNull: false,
     },
     teacher_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
-        model: Teacher,
-        key: 'id',
+        model: ProgUser,
+        key: 'googleId',
       },
+      onDelete: 'CASCADE'
     },
   },
   {
@@ -202,7 +203,7 @@ Quiz.init(
 // Define QuizStudent model
 class QuizStudent extends Model<InferAttributes<QuizStudent>, InferCreationAttributes<QuizStudent>> {
   declare id: CreationOptional<number>;
-  declare f_student_id: number;
+  declare f_student_id: string;
   declare f_quiz_id: number;
   declare answer: string | null;
   declare points: number | null;
@@ -215,12 +216,13 @@ QuizStudent.init(
       primaryKey: true,
     },
     f_student_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
-        model: Student,
-        key: 'id',
+        model: ProgUser,
+        key: 'googleId',
       },
+    onDelete: 'CASCADE'
     },
     f_quiz_id: {
       type: DataTypes.INTEGER,
@@ -267,12 +269,13 @@ ClassroomStudents.init(
       },
     },
     f_student_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       references: {
-        model: Student,
-        key: 'id',
+        model: ProgUser,
+        key: 'googleId',
       },
+      onDelete: 'CASCADE'
     },
   },
   {
@@ -282,8 +285,15 @@ ClassroomStudents.init(
 );
 
 // Sync models with database
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database & tables created!');
-});
+(async () => {
+  try {
+    await sequelize.query('PRAGMA foreign_keys = OFF');
+    await sequelize.sync({ alter: true });
+    await sequelize.query('PRAGMA foreign_keys = ON');
+    console.log('Database & tables created!');
+  } catch (error) {
+    console.error('Error syncing database:', error);
+  }
+})();
 
-export { sequelize, ProgUser, Teacher, Student, Classroom, Quiz, QuizStudent, ClassroomStudents };
+export { sequelize, ProgUser, Classroom, Quiz, QuizStudent, ClassroomStudents };
