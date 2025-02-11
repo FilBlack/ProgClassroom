@@ -12,41 +12,37 @@
             position: string,
     }
     
-    let students: ProgUser[];
+    let students: ProgUser[] = $state();
 
     onMount(() => {
-    const currentClassroom = sessionStorage.getItem('currentClassroom');
+    const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
     if (!currentClassroom) {
         console.error('No currentClassroom found in sessionStorage.');
         return;
+    } else {
+        fetchStudentsByClassroom(currentClassroom)
     }
-
-    async function fetchStudentsByClassroom(): Promise<ProgUser[] | { error: string }> {
-        return fetch(`/getStudentsByClassroom?classroomId=${currentClassroom}`)
-        .then(response => {
-            if (!response.ok) {
-            throw new Error(`Error: ${response.status} ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => data)
-        .catch(error => {
-            console.error('Error fetching students by classroom:', error);
-            return { error: 'Failed to fetch students by classroom' };
-        });
-    }
-
-    fetchStudentsByClassroom().then(student_data => {
-        if (!('error' in student_data)) {
-        students = student_data;
-        } else {
-        console.log("Error fetching students by classroom");
+    })
+    function fetchStudentsByClassroom(currentClassroom:number): void {
+        fetch(`/getStudentsByClassroom?classroomId=${currentClassroom}`)
+            .then(response => {
+                if (!response.ok) {
+                throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(student_data => {
+                    students = student_data;
+            }).catch(error => {
+                console.error('Error fetching students by classroom:', error);
+            })
         }
-    });
-    });
-    let StudentAddMessageActive: boolean = false
+    
+    let StudentAddMessageActive: boolean = $state(false)
 
-    function AddStudents(studentString:string) {
+    function AddStudents() {
+        const studentTextArea = document.getElementById("AddStudent") as HTMLTextAreaElement
+        const studentString:string = studentTextArea.value
         const studentList: string[] = studentString.split(';').map(item => item.trim())
         //Get the classroom id from session
         const currentClassroom = sessionStorage.getItem("currentClassroom")
@@ -58,28 +54,29 @@
             body: JSON.stringify({ studentList: studentList, currentClassroom:currentClassroom})
         })
         .then(response => response.json())
-        .then(data => {
+        .then((data) => {
             // Now enable the success message for a few seconds
             StudentAddMessageActive = true
+            studentTextArea.value = ""
+            fetchStudentsByClassroom(Number(currentClassroom))
             setTimeout(() => {
                 StudentAddMessageActive = false;
             }, 3000);})
         .catch(error => console.error('Error:', error));
-
     }
+
 </script>
 <Header />
 
 
 <h1> People</h1>
 {#each students as student,index}
-    {student.name}
-    {student.id}
+    {student.name} {student.email}
 {/each}
 
 <label for="AddStudent">Add Students (delimetered by ;)</label>
 <textarea name="AddStudent" id="AddStudent"></textarea>
-<button id="AddStudentButton">Add</button>
+<button id="AddStudentButton" onclick={AddStudents}>Add</button>
 
 {#if (StudentAddMessageActive)}
     The users have been added

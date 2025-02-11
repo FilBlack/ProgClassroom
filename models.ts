@@ -14,7 +14,8 @@ class ProgUser extends Model<InferAttributes<ProgUser>, InferCreationAttributes<
   declare name: string;
   declare email: string | null;
   declare profilePicture: string | null;
-  declare position: string 
+  declare position: string ;
+  declare isPending: boolean;
 }
 ProgUser.init(
   {
@@ -35,6 +36,7 @@ ProgUser.init(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     profilePicture: {
       type: DataTypes.STRING,
@@ -43,6 +45,10 @@ ProgUser.init(
     position: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    isPending: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
     }
   },
   {
@@ -50,86 +56,6 @@ ProgUser.init(
     modelName: 'User',
   }
 );
-
-// class Teacher extends Model<InferAttributes<Teacher>, InferCreationAttributes<Teacher>> {
-//   declare id: CreationOptional<number>;
-//   declare googleId: string;
-//   declare name: string;
-//   declare email: string | null;
-//   declare profilePicture: string | null;
-// }
-
-// Teacher.init(
-//   {
-//     id: {
-//       type: DataTypes.INTEGER,
-//       autoIncrement: true,
-//       primaryKey: true,
-//     },
-//     googleId: {
-//       type: DataTypes.STRING,
-//       unique: true,
-//       allowNull: false,
-//     },
-//     name: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//     },
-//     email: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//     },
-//     profilePicture: {
-//       type: DataTypes.STRING,
-//       allowNull: true,
-//     },
-//   },
-//   {
-//     sequelize,
-//     modelName: 'Teacher',
-//   }
-// );
-
-// Define Student model with the same structure as ProgUser
-// class Student extends Model<InferAttributes<Student>, InferCreationAttributes<Student>> {
-//   declare id: CreationOptional<number>;
-//   declare googleId: string;
-//   declare name: string;
-//   declare email: string | null;
-//   declare profilePicture: string | null;
-// }
-
-// Student.init(
-//   {
-//     id: {
-//       type: DataTypes.INTEGER,
-//       autoIncrement: true,
-//       primaryKey: true,
-//     },
-//     googleId: {
-//       type: DataTypes.STRING,
-//       unique: true,
-//       allowNull: false,
-//     },
-//     name: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//     },
-//     email: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//     },
-//     profilePicture: {
-//       type: DataTypes.STRING,
-//       allowNull: true,
-//     },
-//   },
-//   {
-//     sequelize,
-//     modelName: 'Student',
-//   }
-// );
-
 // Define Classroom model
 class Classroom extends Model<InferAttributes<Classroom>, InferCreationAttributes<Classroom>> {
   declare id: CreationOptional<number>;
@@ -251,7 +177,7 @@ QuizStudent.init(
 class ClassroomStudents extends Model<InferAttributes<ClassroomStudents>, InferCreationAttributes<ClassroomStudents>> {
   declare id: CreationOptional<number>;
   declare f_classroom_id: number;
-  declare f_student_id: number;
+  declare f_student_email: string;
 }
 ClassroomStudents.init(
   {
@@ -268,12 +194,12 @@ ClassroomStudents.init(
         key: 'id',
       },
     },
-    f_student_id: {
+    f_student_email: {
       type: DataTypes.STRING,
       allowNull: false,
       references: {
         model: ProgUser,
-        key: 'googleId',
+        key: 'email',
       },
       onDelete: 'CASCADE'
     },

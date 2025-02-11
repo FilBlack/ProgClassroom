@@ -5,6 +5,7 @@ import session from 'express-session'
 import passport from 'passport'
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'; 
+import { v4 as uuidv4 } from 'uuid'
 import { sequelize, Classroom, Quiz, QuizStudent, ClassroomStudents, ProgUser} from './models.js';
 import './passport.js'
 
@@ -147,7 +148,7 @@ const getStudentsByClassroom = async (classroomId: number): Promise<ProgUser[]> 
 
     for (const connection of studentClassroomConnections) {
       let student = await ProgUser.findAll({
-        where: { googleId: connection.f_student_id }
+        where: { email: connection.f_student_email }
       });
 
       if (student.length > 0) {
@@ -185,14 +186,25 @@ app.get('/getStudentsByClassroom', async (req: Request, res: Response) => {
 app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
   if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
     try {
-
       const studentList: string[] = req.body.studentList;
       const currentClassroom: string = req.body.currentClassroom
-      const insertPromises = studentList.map(studentId => 
+      const insertPromises = studentList.map(async studentEmail => {
+        const [user, created] = await ProgUser.findOrCreate({
+          where: { email: studentEmail },
+          defaults: {
+            googleId: uuidv4(), // Chance of collision 1 in 2^212 apparently 
+            name: 'Pending', 
+            profilePicture: null,
+            position: 'student',
+            isPending: true,
+          }
+        });
         ClassroomStudents.create({
           f_classroom_id: Number(currentClassroom), 
-          f_student_id: Number(studentId)
+          f_student_email: String(studentEmail)
         })
+      }
+        
       );
       await Promise.all(insertPromises);
       
@@ -228,7 +240,27 @@ app.post('/addClassroom', async (req: Request, res: Response) => {
   }
 })
 
-
+app.post ('/removeClassroom', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const classroomId: string = req.body.classroomId;
+      const destroyed = await Classroom.destroy({
+        where: { id: classroomId },
+      })
+      if (destroyed) {
+        res.status(201).json({ message: 'Classroom removed successfully' });
+      }  
+      else {
+        res.status(500).json({ error: 'Failed to remove classroom' });
+      }
+    } catch (error) {
+      console.error('Error removing classroom:', error);
+      res.status(500).json({ error: 'Failed to remove classroom' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
 
 
 

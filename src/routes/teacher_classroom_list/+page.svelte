@@ -61,7 +61,25 @@
             })
             .catch(error => console.error('Error:', error));
         }
-
+    }
+    async function removeClassroom(room: Classroom) {
+        if (confirm(`Are you sure you want to delete ${room.name}?`)) {
+            fetch('/removeClassroom', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({classroomId: room.id})
+            })
+            .then(response => {
+                console.log(response)
+                return response.json()
+            })
+            .then(async (data) =>  {
+                classrooms = await getClassrooms();
+            })
+            .catch(error => console.error('Error:', error));
+        }
     }
 
 </script>
@@ -70,8 +88,8 @@
 Your classrooms: 
 
 {#each classrooms as room, i}
-    <button onclick={classroomRedirect}>{room.name}</button>
-    <!-- <button id={room.name +"remove"} onclick={() => removeClassroom(room.name)}>remove classroom</button> -->
+    <button onclick={() => classroomRedirect(String(room.id))}>{room.name}</button>
+    <button id={room.name +"remove"} onclick={() => removeClassroom(room)}>remove classroom</button>
 {/each}
 
 
