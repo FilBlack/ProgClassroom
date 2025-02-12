@@ -11,17 +11,17 @@
 
     let classrooms: Classroom[] = $state([])
     async function getClassrooms() {
-    try {
-        const response = await fetch('/getClassroomsByTeacher');
-        if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
+        try {
+            const response = await fetch('/getClassroomsByTeacher');
+            if (!response.ok) {
+            throw new Error(`Error: ${response.status} ${response.statusText}`);
+            }
+            const classroomData = await response.json();
+            return !('error' in classroomData) ? classroomData : null;
+        } catch (error) {
+            console.error('Error fetching classrooms:', error);
+            throw new Error('Failed to fetch classrooms');
         }
-        const classroomData = await response.json();
-        return !('error' in classroomData) ? classroomData : null;
-    } catch (error) {
-        console.error('Error fetching classrooms:', error);
-        return { error: 'Failed to fetch classrooms' };
-    }
     }
 
     onMount(async () => {

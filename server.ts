@@ -5,8 +5,9 @@ import session from 'express-session'
 import passport from 'passport'
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'; 
+import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid'
-import { sequelize, Classroom, Quiz, QuizStudent, ClassroomStudents, ProgUser} from './models.js';
+import { sequelize, Op, Classroom, Quiz, QuizStudent, ClassroomStudents, ProgUser} from './models.js';
 import './passport.js'
 
 declare global {
@@ -102,32 +103,22 @@ app.get('/getClassroomsByTeacher', async (req : Request, res :Response) => {
 
 });
 
-// get Quizes in classroom endpoint 
-const getQuizesByClassroom = async (classroomId: number) => {
-  try {
-    const quizes = await Quiz.findAll({
-      where: {
-        f_classroom_id: classroomId,
-      },
-    });
-    return quizes;
-  } catch (error) {
-    console.error('Error fetching classrooms:', error);
-    throw error;
-  }
-};
-
-app.get('/getQuizesByClassroom', async (req: Request, res: Response) => {
+app.get('/getClassroomsByStudent', async (req : Request, res :Response) => {
   if (req.user !== undefined && req.isAuthenticated()) {
-    const classroomId = Number(req.query.classroomId);
-  
-    if (isNaN(classroomId)) {
-      res.status(500).json({error: "We need a number"})
-    }  
-  
+
+    const studentEmail = String(req.user.email as string);
     try {
-      const quizzes = await getQuizesByClassroom(classroomId);
-      res.json(quizzes);
+      
+      const classroomStudents = await ClassroomStudents.findAll({
+        where: { f_student_email: studentEmail }
+      });
+    
+      const classroomIds = classroomStudents.map(classroom => classroom.id);
+      const classrooms = await Promise.all(
+        classroomIds.map(id => Classroom.findOne({ where: { id } }))
+      );
+
+      res.json(classrooms);
     } catch (error) {
       console.error('Error fetching classrooms:', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -135,7 +126,10 @@ app.get('/getQuizesByClassroom', async (req: Request, res: Response) => {
   } else {
     res.status(403).json({error: "Unauthorized"})
   }
+
 });
+
+//Student Section
 
 const getStudentsByClassroom = async (classroomId: number): Promise<ProgUser[]> => {
   try {
@@ -199,7 +193,7 @@ app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
             isPending: true,
           }
         });
-        ClassroomStudents.create({
+        await ClassroomStudents.create({
           f_classroom_id: Number(currentClassroom), 
           f_student_email: String(studentEmail)
         })
@@ -217,6 +211,31 @@ app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
     res.status(403).json({error: "Unauthorized"})
   }
 })
+
+app.post ('/removeStudent', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const classroomId: number = req.body.classroomId;
+      const studentEmail: string = req.body.studentEmail
+      const destroyed = await ClassroomStudents.destroy({
+        where: { f_classroom_id: classroomId, f_student_email: studentEmail},
+      })
+      if (destroyed) {
+        res.status(201).json({ message: 'Student removed successfully' });
+      }  
+      else {
+        res.status(500).json({ error: 'Failed to remove student' });
+      }
+    } catch (error) {
+      console.error('Error removing student:', error);
+      res.status(500).json({ error: 'Failed to remove student' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
+
+//Classroom section
 
 app.post('/addClassroom', async (req: Request, res: Response) => {
   if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
@@ -263,8 +282,113 @@ app.post ('/removeClassroom', async (req: Request, res: Response) => {
 })
 
 
+// Quiz section
 
+// get Quizes in classroom endpoint 
+const getQuizesByClassroom = async (classroomId: number) => {
+  try {
+    const quizes = await Quiz.findAll({
+      where: {
+        f_classroom_id: classroomId,
+      },
+    });
+    return quizes;
+  } catch (error) {
+    console.error('Error fetching classrooms:', error);
+    throw error;
+  }
+};
 
+app.get('/getQuizesByClassroom', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated()) {
+    const classroomId = Number(req.query.classroomId);
+  
+    if (isNaN(classroomId)) {
+      res.status(500).json({error: "We need a number"})
+    }  
+  
+    try {
+      const quizzes = await getQuizesByClassroom(classroomId);
+      res.json(quizzes);
+    } catch (error) {
+      console.error('Error fetching classrooms:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+});
+
+app.post('/addQuizToClassroom', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const currentClassroom: string = req.body.currentClassroom;
+      const quizName: string = req.body.quizName;
+      const quizQuestion: string = req.body.quizQuestion;
+      const quizType: 'plaintext' | 'code' = req.body.quizType;
+      const closeAt = req.body.closeAt //Needs more work
+      await Quiz.create({
+        name: String(quizName), 
+        question: String(quizQuestion),
+        type: quizType,
+        f_classroom_id: Number(currentClassroom),
+        closeAt: String(closeAt),
+        open: true
+      })
+      
+      res.status(201).json({ message: 'Quiz added successfully' });
+  } catch (error) {
+    console.error('Error adding Quiz:', error);
+    res.status(500).json({ error: 'Failed to add quiz' });
+  }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
+
+app.post ('/removeQuiz', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const quizId: number = req.body.quizId
+      const destroyed = await Quiz.destroy({
+        where: {id: quizId},
+      })
+      if (destroyed) {
+        res.status(201).json({ message: 'Quiz removed successfully' });
+      }  
+      else {
+        res.status(500).json({ error: 'Failed to remove quiz' });
+      }
+    } catch (error) {
+      console.error('Error removing quiz:', error);
+      res.status(500).json({ error: 'Failed to remove quiz' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
+
+app.post ('/closeQuiz', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const quizId: number = req.body.quizId
+      await Quiz.update(
+        { open: false },
+        {
+          where: {
+            id: quizId
+          }
+        }
+      );
+      res.status(201).json({message: "Quiz successfuly closed"})
+    } catch (error) {
+      console.error('Error removing quiz:', error);
+      res.status(500).json({ error: 'Failed to remove quiz' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error(err.stack);
@@ -287,6 +411,31 @@ app._router.stack.forEach((middleware) => {
         console.log(handler.route.path);
       }
     });
+  }
+});
+
+//Schedule quiz closing 
+
+cron.schedule('* * * * *', async () => {
+  try {
+    const nowISO = new Date().toISOString();
+    // Update quizzes that are still open but whose closeAt timestamp has passed
+    const [updated] = await Quiz.update(
+      { open: false },
+      {
+        where: {
+          open: true,
+          closeAt: {
+            [Op.lte]: nowISO
+          }
+        }
+      }
+    );
+    if (updated) {
+      console.log(`Closed ${updated} expired quizzes.`);
+    }
+  } catch (error) {
+    console.error('Error closing expired quizzes:', error);
   }
 });
 

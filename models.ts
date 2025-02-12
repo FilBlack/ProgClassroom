@@ -1,4 +1,4 @@
-import { Sequelize, DataTypes, Model } from 'sequelize';
+import { Sequelize, DataTypes, Model, Op } from 'sequelize';
 import type {InferAttributes, InferCreationAttributes, CreationOptional} from 'sequelize'
 // Initialize Sequelize instance
 const sequelize = new Sequelize({
@@ -93,7 +93,10 @@ Classroom.init(
 class Quiz extends Model<InferAttributes<Quiz>, InferCreationAttributes<Quiz>> {
   declare id: CreationOptional<number>;
   declare f_classroom_id: number;
+  declare name: string;
+  declare question: string;
   declare open: boolean;
+  declare closeAt: string;
   declare type: 'plaintext' | 'code';
 }
 Quiz.init(
@@ -111,9 +114,21 @@ Quiz.init(
         key: 'id',
       },
     },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    question: {
+      type: DataTypes.STRING,
+      allowNull:false
+    },
     open: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
+    },
+    closeAt: {
+      type: DataTypes.STRING, 
+      allowNull: true, //When null that means open forever
     },
     type: {
       type: DataTypes.ENUM('plaintext', 'code'),
@@ -222,4 +237,4 @@ ClassroomStudents.init(
   }
 })();
 
-export { sequelize, ProgUser, Classroom, Quiz, QuizStudent, ClassroomStudents };
+export { sequelize, Op, ProgUser, Classroom, Quiz, QuizStudent, ClassroomStudents };
