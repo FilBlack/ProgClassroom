@@ -144,7 +144,7 @@ Quiz.init(
 // Define QuizStudent model
 class QuizStudent extends Model<InferAttributes<QuizStudent>, InferCreationAttributes<QuizStudent>> {
   declare id: CreationOptional<number>;
-  declare f_student_id: string;
+  declare f_student_email: string;
   declare f_quiz_id: number;
   declare answer: string | null;
   declare points: number | null;
@@ -156,12 +156,12 @@ QuizStudent.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    f_student_id: {
+    f_student_email: {
       type: DataTypes.STRING,
       allowNull: false,
       references: {
         model: ProgUser,
-        key: 'googleId',
+        key: 'email',
       },
     onDelete: 'CASCADE'
     },

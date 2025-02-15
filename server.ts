@@ -184,7 +184,7 @@ app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
       const currentClassroom: string = req.body.currentClassroom
       const insertPromises = studentList.map(async studentEmail => {
         const [user, created] = await ProgUser.findOrCreate({
-          where: { email: studentEmail },
+          where: { email: studentEmail, position: 'student' },
           defaults: {
             googleId: uuidv4(), // Chance of collision 1 in 2^212 apparently 
             name: 'Pending', 
@@ -197,9 +197,21 @@ app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
           f_classroom_id: Number(currentClassroom), 
           f_student_email: String(studentEmail)
         })
-      }
+        // Add the connections between quiz and student that arise 
+        const quizzes = await Quiz.findAll({
+          where: {
+            f_classroom_id : currentClassroom
+          }
+        }) 
+        for (const quiz of quizzes) {
+          let created = await QuizStudent.create({
+            f_student_email: studentEmail,
+            f_quiz_id: quiz.id
+          }) 
+        }
+      
         
-      );
+      });
       await Promise.all(insertPromises);
       
       res.status(201).json({ message: 'Students added to classroom successfully' });
@@ -212,15 +224,24 @@ app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
   }
 })
 
-app.post ('/removeStudent', async (req: Request, res: Response) => {
+app.post ('/removeStudentFromClassroom', async (req: Request, res: Response) => {
   if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
     try {
       const classroomId: number = req.body.classroomId;
       const studentEmail: string = req.body.studentEmail
-      const destroyed = await ClassroomStudents.destroy({
+      const studentId: string = req.body.studentId
+      let destroyed = await ClassroomStudents.destroy({
         where: { f_classroom_id: classroomId, f_student_email: studentEmail},
       })
       if (destroyed) {
+        const ClassroomQuizes = await Quiz.findAll(
+          {where:{ f_classroom_id: classroomId }
+        })
+        for (const quiz of ClassroomQuizes) {
+          destroyed = await QuizStudent.destroy({
+            where: {f_quiz_id : quiz.id, f_student_email: studentEmail}
+          })
+        }
         res.status(201).json({ message: 'Student removed successfully' });
       }  
       else {
@@ -234,6 +255,35 @@ app.post ('/removeStudent', async (req: Request, res: Response) => {
     res.status(403).json({error: "Unauthorized"})
   }
 })
+
+//Quiz student update to make the connection between student and quiz
+async function updateQuizStudentByClassroom(classroomId:number) {
+  const allQuizzes: Quiz[] = await Quiz.findAll({
+    where: {f_classroom_id:classroomId}
+  })
+
+  const classroomStudentsConnections: ClassroomStudents[] = await ClassroomStudents.findAll({
+    where: {f_classroom_id: classroomId}
+  })
+
+  for (const quiz of allQuizzes) {
+    for (const studentConn of classroomStudentsConnections) {
+      await QuizStudent.findOrCreate({
+        where: {
+          f_quiz_id: quiz.id,
+          f_student_email: studentConn.f_student_email  
+        },
+        defaults: {
+          answer: null,
+          points: null
+        }
+      });
+    }
+  }
+}
+
+
+
 
 //Classroom section
 
@@ -263,10 +313,17 @@ app.post ('/removeClassroom', async (req: Request, res: Response) => {
   if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
     try {
       const classroomId: string = req.body.classroomId;
-      const destroyed = await Classroom.destroy({
+      let destroyed = await Classroom.destroy({
         where: { id: classroomId },
       })
       if (destroyed) {
+        // Destroy the things associated with it 
+        destroyed = await Quiz.destroy({where:
+          {f_classroom_id:classroomId}
+        })
+        destroyed = await ClassroomStudents.destroy({where:
+          {f_classroom_id:classroomId}
+        })
         res.status(201).json({ message: 'Classroom removed successfully' });
       }  
       else {
@@ -327,7 +384,7 @@ app.post('/addQuizToClassroom', async (req: Request, res: Response) => {
       const quizQuestion: string = req.body.quizQuestion;
       const quizType: 'plaintext' | 'code' = req.body.quizType;
       const closeAt = req.body.closeAt //Needs more work
-      await Quiz.create({
+      const createdQuiz = await Quiz.create({
         name: String(quizName), 
         question: String(quizQuestion),
         type: quizType,
@@ -335,6 +392,18 @@ app.post('/addQuizToClassroom', async (req: Request, res: Response) => {
         closeAt: String(closeAt),
         open: true
       })
+      const students = await ClassroomStudents.findAll({
+        where: {
+          f_classroom_id: currentClassroom
+        }
+      })
+
+      for (const student of students) {
+        await QuizStudent.create({
+          f_quiz_id: createdQuiz.id,
+          f_student_email: student.f_student_email
+        })
+      }
       
       res.status(201).json({ message: 'Quiz added successfully' });
   } catch (error) {
@@ -350,10 +419,16 @@ app.post ('/removeQuiz', async (req: Request, res: Response) => {
   if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
     try {
       const quizId: number = req.body.quizId
-      const destroyed = await Quiz.destroy({
-        where: {id: quizId},
+      let destroyed = await QuizStudent.destroy({
+        where: {
+          f_quiz_id:quizId
+        }
       })
+      
       if (destroyed) {
+        destroyed = await Quiz.destroy({
+          where: {id: quizId},
+        })
         res.status(201).json({ message: 'Quiz removed successfully' });
       }  
       else {

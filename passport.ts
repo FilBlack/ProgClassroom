@@ -19,12 +19,12 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
         try {
-            // Check if the user already exists in the database
             if (req.session.position) {
                 const profileEmail: string | null = profile.emails?.[0].value || null 
                 if (profileEmail){
                     let user: PassportUser | null = await ProgUser.findOne({ where: { email: profileEmail} });
                     const position:string = req.session.position
+                    // Check if the user already exists in the database
                     if (!user) {
                         // Create a new user if not found 
                         user = await ProgUser.create({
@@ -35,6 +35,10 @@ passport.use(
                             position: position,
                             isPending: false,
                         });
+                    } else if(user.position !== position){
+                        // User is loggin in as a different role 
+                        return done("User already registered with different role")
+
                     } else if(user.isPending) {
                         //User exists but is pending, no need to update email
                         try {
@@ -50,7 +54,7 @@ passport.use(
                     };
                     return done(null, user);  // Pass the user object to done
                 } else {
-                    done("Need an email")
+                    return done("Need an email")
                 }
             } else {
                 return done("Position not found in session")

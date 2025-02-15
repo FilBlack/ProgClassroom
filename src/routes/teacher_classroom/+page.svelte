@@ -83,12 +83,12 @@
     async function removeStudent(student: ProgUser) {
         if (confirm(`Are you sure you want to remove ${student.name}?`)) {
             const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
-            fetch('/removeStudent', {
+            fetch('/removeStudentFromClassroom', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({classroomId: currentClassroom, studentEmail: student.email})
+                body: JSON.stringify({classroomId: currentClassroom, studentEmail: student.email, studentId: student.googleId})
             })
             .then(response => {
                 console.log(response)
