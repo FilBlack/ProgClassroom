@@ -7,141 +7,138 @@
     export { minimalSetup, basicSetup }
     </script>
     
-    <script>
+<script>
     import { onMount, onDestroy, createEventDispatcher } from 'svelte'
     const dispatch = createEventDispatcher()
     
     let dom
-
-  let _mounted = false
-  onMount(() => {
-    _mounted = true
-    return () => { _mounted = false }
-  })
-
-  export let view = null
-
-  // The initial document (non-reactive).
-  export let doc
-
-  // Optionally listen to transactions.
-  export let verbose = false
-
-  let _docCached = null
-
-  function _setText(text) {
-    view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: text },
+    
+    let _mounted = false
+    onMount(() => {
+      _mounted = true
+      return () => { _mounted = false }
     })
-  }
-
-  const subscribers = new Set()
-  export const docStore = {
-    ready: () => (view !== null),
-    subscribe(cb) {
-      subscribers.add(cb)
-      if (!this.ready()) {
-        cb(null)
-      } else {
-        if (_docCached == null) {
-          _docCached = view.state.doc.toString()
+    
+    export let view = null
+    
+    /* `doc` is deliberately made non-reactive for not storing a reduntant string
+       besides the editor. Also, setting doc to undefined will not trigger an
+       update, so that you can clear it after setting one. */
+    export let doc
+    
+    /* Set this if you would like to listen to all transactions via `update` event. */
+    export let verbose = false
+    
+    /* Cached doc string so that we don't extract strings in bulk over and over. */
+    let _docCached = null
+    
+    /* Overwrite the bulk of the text with the one specified. */
+    function _setText(text) {
+      view.dispatch({
+        changes: {from: 0, to: view.state.doc.length, insert: text},
+      })
+    }
+    
+    const subscribers = new Set()
+    
+    /* And here comes the reactivity, implemented as a r/w store. */
+    export const docStore = {
+      ready: () => (view !== null),
+      subscribe(cb) {
+        subscribers.add(cb)
+    
+        if (!this.ready()) {
+          cb(null)
+        } else {
+          if (_docCached == null) {
+            _docCached = view.state.doc.toString()
+          }
+          cb(_docCached)
         }
-        cb(_docCached)
+    
+        return () => void subscribers.delete(cb)
+      },
+      set(newValue) {
+        if (!_mounted) {
+          throw new Error('Cannot set docStore when the component is not mounted.')
+        }
+    
+        const inited = _initEditorView(newValue)
+        if (!inited) _setText(newValue)
+      },
+    }
+    
+    export let extensions = minimalSetup
+    
+    function _reconfigureExtensions() {
+      if (view === null) return
+      view.dispatch({
+        effects: StateEffect.reconfigure.of(effectiveExtensions),
+      })
+    }
+        
+    function _editorTxHandler(trs, view) {
+      view.update(trs)
+    
+      if (verbose) {
+        dispatch('update', trs)
       }
-      return () => void subscribers.delete(cb)
-    },
-    set(newValue) {
-      if (!_mounted) {
-        throw new Error('Cannot set docStore when the component is not mounted.')
+    
+        let lastChangingTr
+      if (lastChangingTr = trs.findLast(tr => tr.docChanged)) {
+        _docCached = null
+        if (subscribers.size) {
+          dispatchDocStore(_docCached = lastChangingTr.newDoc.toString())
+        }
+        dispatch('change', {view, trs})
       }
-      const inited = _initEditorView(newValue)
-      if (!inited) _setText(newValue)
-    },
-  }
+    }
+    
+    function dispatchDocStore(s) {
+      for (const cb of subscribers) {
+        cb(s)
+      }
+    }
+    
+    // the view will be inited with the either doc (as long as that it is not `undefined`)
+    // or the value in docStore once set
+    function _initEditorView(initialDoc) {
+      if (view !== null) {
+        return false
+      }
+    
+      view = new EditorView({
+        doc: initialDoc,
+        extensions,
+        parent: dom,
+        dispatchTransactions: _editorTxHandler,
+      })
+      return true
+    }
 
-  // Base extensions provided from outside; default to minimalSetup.
-  export let extensions = minimalSetup
+    export let disabled = false
 
-  // Export a "disabled" prop.
-  export let disabled = false
 
-  // Create a unique tag for the editable extension.
-  const editableTag = Symbol("editable")
 
-  // Helper to tag an extension.
-  function tagExtension(tag, extension) {
-    extension.tag = tag
-    return extension
-  }
+    $: effectiveExtensions = disabled 
+    ? [...extensions, EditorView.editable.of(false)]
+    : extensions
 
-  // When the editor is first created, include our tagged editable extension.
-  // We initialize it with EditorView.editable.of(!disabled) so that if disabled is true,
-  // the editor is read-only.
-  $: initialExtensions = [
-    ...extensions,
-    tagExtension(editableTag, EditorView.editable.of(!disabled))
-  ]
+    $: effectiveExtensions, _reconfigureExtensions()
 
-  // In our _initEditorView, use the initialExtensions.
-  function _initEditorView(initialDoc) {
-    if (view !== null) return false
+    $: disabled, console.log(disabled)
 
-    view = new EditorView({
-      doc: initialDoc,
-      extensions: initialExtensions,
-      parent: dom,
-      dispatchTransactions: _editorTxHandler,
+    
+    $: if (_mounted && doc !== undefined) {
+      const inited = _initEditorView(doc)
+      dispatchDocStore(doc)
+    }
+    
+    onDestroy(() => {
+      if (view !== null) {
+        view.destroy()
+      }
     })
-    return true
-  }
-
-  function _reconfigureExtensions() {
-    if (view === null) return
-    // Use a reconfiguration effect keyed by our editableTag.
-    view.dispatch({
-      effects: StateEffect.reconfigure.of({
-        [editableTag]: EditorView.editable.of(!disabled)
-      }),
-    })
-  }
-
-//   // Watch for changes to "extensions" (or any external change) and reconfigure.
-//   $: extensions, _reconfigureExtensions()
-
-  // Additionally, update the editable extension when "disabled" changes.
-  $: disabled, _reconfigureExtensions(), console.log("disabled:", disabled)
-
-  function _editorTxHandler(trs, view) {
-    view.update(trs)
-    if (verbose) {
-      dispatch('update', trs)
-    }
-    let lastChangingTr
-    if (lastChangingTr = trs.findLast(tr => tr.docChanged)) {
-      _docCached = null
-      if (subscribers.size) {
-        dispatchDocStore(_docCached = lastChangingTr.newDoc.toString())
-      }
-      dispatch('change', { view, trs })
-    }
-  }
-
-  function dispatchDocStore(s) {
-    for (const cb of subscribers) {
-      cb(s)
-    }
-  }
-
-  $: if (_mounted && doc !== undefined) {
-    const inited = _initEditorView(doc)
-    dispatchDocStore(doc)
-  }
-
-  onDestroy(() => {
-    if (view !== null) {
-      view.destroy()
-    }
-  })
     </script>
     
     <div class="codemirror" bind:this={dom}>
