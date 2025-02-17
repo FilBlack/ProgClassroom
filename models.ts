@@ -147,6 +147,7 @@ class QuizStudent extends Model<InferAttributes<QuizStudent>, InferCreationAttri
   declare f_student_email: string;
   declare f_quiz_id: number;
   declare answer: string | null;
+  declare answered: boolean;
   declare points: number | null;
 }
 QuizStudent.init(
@@ -176,6 +177,10 @@ QuizStudent.init(
     answer: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    answered: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     points: {
       type: DataTypes.INTEGER,
