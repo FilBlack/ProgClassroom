@@ -207,7 +207,8 @@ app.post('/addStudentsToClassroom', async (req: Request, res: Response) => {
           let created = await QuizStudent.create({
             f_student_email: studentEmail,
             f_quiz_id: quiz.id,
-            answered: false
+            answered: false,
+            max_points: quiz.max_points
           }) 
         }
       
@@ -259,21 +260,20 @@ app.post ('/removeStudentFromClassroom', async (req: Request, res: Response) => 
 
 // Quiz section
 
-app.get('/getQuizzesByStudent', async (req : Request, res :Response) => {
+app.get('/getQuizzesByStudentAndClassroom', async (req : Request, res :Response) => {
   if (req.user !== undefined && req.isAuthenticated()) {
-
+    const currentClassroom = Number(req.query.currentClassroom)
     const studentEmail = String(req.user.email);
     try {
-      
       const studentQuizzes = await QuizStudent.findAll({
         where: { f_student_email: studentEmail }
       });
     
       const quizIds = studentQuizzes.map(quizStudent => quizStudent.f_quiz_id);
-        const quizzes = await Promise.all(
-          quizIds.map(f_quiz_id => Quiz.findOne({ where: { id: f_quiz_id } }))
+      let quizzes = await Promise.all(
+        quizIds.map(f_quiz_id => Quiz.findOne({ where: { id: f_quiz_id, f_classroom_id: currentClassroom } }))
       );
-
+      quizzes = quizzes.filter(quiz => quiz !== null);
       res.json(quizzes);
     } catch (error) {
       console.error('Error fetching quizzes:', error);
@@ -285,19 +285,70 @@ app.get('/getQuizzesByStudent', async (req : Request, res :Response) => {
 
 });
 
+// Get a single quiz student connection
 app.get('/getQuizStudentConnection', async (req : Request, res :Response) => {
   if (req.user !== undefined && req.isAuthenticated()) {
-
-    const studentEmail = String(req.user.email);
+    const studentEmail = req.query.studentEmail? String(req.query.studentEmail) : String(req.user.email)
     const quizId = Number(req.query.quizId)
     try {
-      
+
       const studentQuizConnection: QuizStudent = await QuizStudent.findOne({
         where: { f_student_email: studentEmail, f_quiz_id: quizId }
       });
   
 
       res.json(studentQuizConnection);
+    } catch (error) {
+      console.error('Error fetching studentQuizConnection:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+});
+
+// Get multiple quiz student connections based off of student email and array of quiz ids 
+app.get('/getQuizStudentConnectionsByQuizIds', async (req : Request, res :Response) => {
+  if (req.user !== undefined && req.isAuthenticated()) {
+    const studentEmail = String(req.user.email);
+    const quizIdArray: number[] = String(req.query.quizIds).split(',').map(stringid => Number(stringid))
+    try {
+      const connectionArray = await Promise.all(
+        quizIdArray.map(async (quizId) => {
+          const studentQuizConnection: QuizStudent = await QuizStudent.findOne({
+            where: { f_student_email: studentEmail, f_quiz_id: quizId }
+          });
+          return studentQuizConnection;
+        })
+      );
+  
+
+      res.json(connectionArray);
+    } catch (error) {
+      console.error('Error fetching studentQuizConnection:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+});
+
+// Get multiple quiz student connection based off of quiz id and array of student emails
+app.get('/getQuizStudentConnectionsByStudentEmails', async (req : Request, res :Response) => {
+  if (req.user !== undefined && req.isAuthenticated()) {
+    const quizId: number = Number(req.query.quizId)
+    const studentEmails: string[] = String(req.query.studentEmails).split(',')
+    try {
+      const connectionArray = await Promise.all(
+        studentEmails.map(async (studentEmail) => {
+          const studentQuizConnection: QuizStudent = await QuizStudent.findOne({
+            where: { f_student_email: studentEmail, f_quiz_id: quizId }
+          });
+          return studentQuizConnection;
+        })
+      );
+
+      res.json(connectionArray);
     } catch (error) {
       console.error('Error fetching studentQuizConnection:', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -363,6 +414,32 @@ app.post('/unsubmitQuizAnswer', async (req: Request, res: Response) => {
       });
 
       if (affectedCount === 1) {
+        res.status(201).json({ message: 'Unsubmitted successfully' });
+      } else {
+        res.status(500).json({ error: 'Failed to unsubmit quiz' });
+      }
+    } catch (error) {
+      console.error('Error unsubmitting quiz', error);
+      res.status(500).json({ error: 'Failed to unsubmit' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
+
+app.post('/submitQuizComment', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const studentEmail = String(req.body.studentEmail);
+      const quizId = Number(req.body.quizId)
+      const commentText = String(req.body.commentText)
+      const points = Number(req.body.points)
+      const [affectedCount] :[number] = await QuizStudent.update(
+        {graded: true, comment: commentText, points:points},
+        {where: { f_student_email: studentEmail, f_quiz_id: quizId} 
+      });
+
+      if (affectedCount === 1) {
         res.status(201).json({ message: 'Submitted successfully' });
       } else {
         res.status(500).json({ error: 'Failed to submit quiz' });
@@ -370,6 +447,30 @@ app.post('/unsubmitQuizAnswer', async (req: Request, res: Response) => {
     } catch (error) {
       console.error('Error submitting quiz', error);
       res.status(500).json({ error: 'Failed to submit' });
+    }
+  } else {
+    res.status(403).json({error: "Unauthorized"})
+  }
+})
+
+app.post('/unsubmitQuizComment', async (req: Request, res: Response) => {
+  if (req.user !== undefined && req.isAuthenticated() && req.user.position === "teacher") {
+    try {
+      const studentEmail = String(req.body.studentEmail);
+      const quizId = Number(req.body.quizId)
+      const [affectedCount] :[number] = await QuizStudent.update(
+        {graded: false},
+        {where: { f_student_email: studentEmail, f_quiz_id: quizId} 
+      });
+
+      if (affectedCount === 1) {
+        res.status(201).json({ message: 'Unubmitted successfully' });
+      } else {
+        res.status(500).json({ error: 'Failed to unsubmit quiz' });
+      }
+    } catch (error) {
+      console.error('Error unsubmitting quiz', error);
+      res.status(500).json({ error: 'Failed to unsubmit' });
     }
   } else {
     res.status(403).json({error: "Unauthorized"})
@@ -474,14 +575,16 @@ app.post('/addQuizToClassroom', async (req: Request, res: Response) => {
       const quizName: string = req.body.quizName;
       const quizQuestion: string = req.body.quizQuestion;
       const quizType: 'plaintext' | 'code' = req.body.quizType;
-      const closeAt = req.body.closeAt //Needs more work
+      const closeAt = req.body.closeAt
+      const maxPoints = req.body.maxPoints
       const createdQuiz = await Quiz.create({
         name: String(quizName), 
         question: String(quizQuestion),
         type: quizType,
         f_classroom_id: Number(currentClassroom),
         closeAt: String(closeAt),
-        open: true
+        open: true,
+        max_points: Number(maxPoints)
       })
       const students = await ClassroomStudents.findAll({
         where: {
@@ -493,7 +596,8 @@ app.post('/addQuizToClassroom', async (req: Request, res: Response) => {
         await QuizStudent.create({
           f_quiz_id: createdQuiz.id,
           f_student_email: student.f_student_email,
-          answered: false
+          answered: false,
+          max_points: maxPoints
         })
       }
       

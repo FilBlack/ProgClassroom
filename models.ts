@@ -12,7 +12,7 @@ class ProgUser extends Model<InferAttributes<ProgUser>, InferCreationAttributes<
   declare id: CreationOptional<number>; // Auto-incremented ID
   declare googleId: string;
   declare name: string;
-  declare email: string | null;
+  declare email: string;
   declare profilePicture: string | null;
   declare position: string ;
   declare isPending: boolean;
@@ -95,6 +95,7 @@ class Quiz extends Model<InferAttributes<Quiz>, InferCreationAttributes<Quiz>> {
   declare f_classroom_id: number;
   declare name: string;
   declare question: string;
+  declare max_points: number;
   declare open: boolean;
   declare closeAt: string;
   declare type: 'plaintext' | 'code';
@@ -122,6 +123,10 @@ Quiz.init(
       type: DataTypes.STRING,
       allowNull:false
     },
+    max_points: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     open: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -148,6 +153,9 @@ class QuizStudent extends Model<InferAttributes<QuizStudent>, InferCreationAttri
   declare f_quiz_id: number;
   declare answer: string | null;
   declare answered: boolean;
+  declare comment: string;
+  declare graded: boolean;
+  declare max_points: number
   declare points: number | null;
 }
 QuizStudent.init(
@@ -181,6 +189,18 @@ QuizStudent.init(
     answered: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
+    },
+    comment: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    graded: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    max_points: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
     points: {
       type: DataTypes.INTEGER,

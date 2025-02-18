@@ -15,6 +15,12 @@
     
     let _mounted = false
     onMount(() => {
+      effectiveExtensions = [
+      ...extensions,
+      // Use a tagged version of the editable extension:
+      // (You might need to create a wrapper function if EditorView.editable.of doesn’t support a tag option directly.)
+      tagExtension(editableTag, EditorView.editable.of(!disabled))
+    ];
       _mounted = true
       return () => { _mounted = false }
     })
@@ -70,6 +76,15 @@
     
     export let extensions = minimalSetup
     
+    const editableTag = Symbol("editable");
+
+
+    function tagExtension(tag, extension) {
+      // A simple approach: attach a property so we can reference it later.
+      extension.tag = tag;
+      return extension;
+    }
+
     function _reconfigureExtensions() {
       if (view === null) return
       view.dispatch({
@@ -116,16 +131,24 @@
       return true
     }
 
-    export let disabled = false
-
+    export let disabled = true
 
 
     $: effectiveExtensions = disabled 
     ? [...extensions, EditorView.editable.of(false)]
     : extensions
 
-    $: effectiveExtensions, _reconfigureExtensions()
+    $: if (view) {
+      view.dispatch({
+        effects: StateEffect.reconfigure.of({
+          [editableTag]: EditorView.editable.of(!disabled)
+        })
+      });
+    }
 
+    $: {
+      console.log('Effective Extensions:', effectiveExtensions);
+    }
     $: disabled, console.log(disabled)
 
     

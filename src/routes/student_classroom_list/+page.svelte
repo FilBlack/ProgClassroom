@@ -14,9 +14,10 @@
     try {
         const response = await fetch('/getClassroomsByStudent');
         if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
+            throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
         const classroomData = await response.json();
+
         return !('error' in classroomData) ? classroomData : null;
     } catch (error) {
         console.error('Error fetching classrooms:', error);

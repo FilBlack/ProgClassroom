@@ -108,6 +108,8 @@
             name: string ,
             question: string,
             open: boolean,
+            closeAt: string,
+            max_points: number,
             type: 'plaintext' | 'code',
     }
     
@@ -143,6 +145,7 @@
         const quizNameTextArea = document.getElementById("AddQuizName") as HTMLTextAreaElement
         const quizQuestionTextArea = document.getElementById("AddQuizQuestion") as HTMLTextAreaElement
         const selectedModeElement = document.querySelector('input[name="quizType"]:checked') as HTMLInputElement
+        const selectedMaxPointsElement = document.getElementById('quizMaxPoints') as HTMLInputElement
         //Get the classroom id from session
         const currentClassroom = sessionStorage.getItem("currentClassroom")
         fetch('/addQuizToClassroom', {
@@ -155,7 +158,8 @@
                 quizQuestion: quizQuestionTextArea.value,
                 quizType: selectedModeElement.value,
                 currentClassroom:currentClassroom,
-                closeAt: selectedDateTime
+                closeAt: selectedDateTime,
+                maxPoints: selectedMaxPointsElement.value
             })
         })
         .then(response => response.json())
@@ -212,6 +216,29 @@
         }
     }
 
+    function formatCloseAt(ISO: string): string {
+        const date = new Date(ISO);
+        
+        // Check if the ISO string is a valid date
+        if (isNaN(date.getTime())) {
+            return "Invalid date";
+        }
+
+        // "Month Day, Year, Hour:Minute AM/PM"
+        return date.toLocaleString("cs-CZ", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
+        });
+    }
+
+    function teacherQuizRedirect(quiz: Quiz) {
+        sessionStorage.setItem('currentQuiz', String(quiz.id));
+        window.location.href = 'teacher_classroom_quiz'
+    }
 </script>
 <Header />
 
@@ -228,16 +255,18 @@
 <label for="AddStudent">Email addresses: (delimetered by ;)</label>
 <textarea name="AddStudent" id="AddStudent"></textarea>
 <button id="AddStudentButton" onclick={AddStudents}>Add</button>
-
+{#if (StudentAddMessageActive)}
+    The users have been added
+{/if}
 <br>
 <br>
 <br>
 <h1>Quizes</h1>
 {#each quizes as quiz,index}
     <student id={"quiz" + index}>
-        {quiz.name}
+        <button onclick={() => teacherQuizRedirect(quiz)}>{quiz.name}</button>
         {#if quiz.open}
-            Open 
+            Closes at: {formatCloseAt(quiz.closeAt)}
             <button onclick={() => closeQuiz(quiz)}>close </button>
         {:else}
             Closed
@@ -260,13 +289,13 @@
     <input type="radio" name="quizType" value="code">
     Code
 </label>
+<label for="quizMaxPoints">Max points:</label>
+<input id="quizMaxPoints" name="quizMaxPoints" type="number">
 <input bind:this={datepicker} type="text" placeholder="Select the closing time">
 <button id="AddQuizButton" onclick={AddQuiz}>Add</button>
 
 
-{#if (StudentAddMessageActive)}
-    The users have been added
-{/if}
+
 
 
 

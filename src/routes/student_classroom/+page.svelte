@@ -12,24 +12,44 @@
         closeAt: string;
         type: 'plaintext' | 'code';
     }
-    let quizzes: Quiz[] = $state([])
-    async function getQuizzes() {
-    try {
-        const response = await fetch('/getQuizzesByStudent');
-        if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        const quizData = await response.json();
-        return !('error' in quizData) ? quizData : null;
-    } catch (error) {
-        console.error('Error fetching quizzes:', error);
-        throw new Error('Failed to fetch quizzes' );
+
+    interface StudentQuiz {
+        id: number;
+        f_student_email: string;
+        f_quiz_id: number;
+        answer: string | null;
+        answered: boolean;
+        points: number | null;
     }
+
+
+    let combinedQuizzes: (Quiz & StudentQuiz)[] = $state([])
+    async function getQuizzes() {
+        try {
+            const currentClassroom :string = sessionStorage.getItem('currentClassroom')
+            const response = await fetch(`/getQuizzesByStudentAndClassroom?currentClassroom=${currentClassroom}`);
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status} ${response.statusText}`);
+            }
+            const quizData: Quiz[] = await response.json();
+            const quizIds: number[]  = quizData.map(quiz => quiz.id)
+            // Get the needed student connection for each quiz 
+            const response2 = await fetch(`getQuizStudentConnectionsByQuizIds?quizIds=${quizIds.join(',')}`)
+            const connectionData: StudentQuiz[] = await response2.json()
+            // Combine the quiz and connection into one for easier use 
+            const combinedData: (Quiz & StudentQuiz)[] = quizData.map((quiz, index) => {
+                return {...quiz, ...connectionData[index]}
+            })
+            return combinedData
+        } catch (error) {
+            console.error('Error fetching quizzes:', error);
+            throw new Error('Failed to fetch quizzes' );
+        }
     }
 
     onMount(async () => {
-        quizzes = await getQuizzes();
-        console.log(quizzes);
+        combinedQuizzes = await getQuizzes();
+        console.log(combinedQuizzes);
     });
     
     function quizRedirect(quiz_id: number) {
@@ -59,9 +79,18 @@
 </script>
 <Header />
 
-{#each quizzes as quiz, i}
+{#each combinedQuizzes as quiz, i}
     <button onclick={() => quizRedirect(quiz.id)}>{quiz.name}</button>
-    {formatCloseAt(quiz.closeAt)}
+    {#if quiz.answered}
+        Submitted
+    {:else}
+        Not submitted
+    {/if}
+    {#if quiz.open}
+        {formatCloseAt(quiz.closeAt)}
+    {:else}
+        Closed
+    {/if}
 {/each}
 
 
