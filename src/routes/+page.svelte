@@ -12,7 +12,11 @@
         
     }
 </script>
-<Header />
+<Header returnPage="/"
+classroomRedirect="/teacher_classroom_list"
+>
+</Header>
+
 
 Are you a student or a teacher? 
 

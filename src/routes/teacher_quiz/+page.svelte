@@ -110,7 +110,11 @@
     })
 
 </script>
-<Header />
+<Header returnPage="/teacher_classroom_quiz"
+classroomRedirect="/teacher_classroom_list"
+>
+</Header>
+
 
 {#if quiz}
     Question:

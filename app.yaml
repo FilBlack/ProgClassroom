@@ -1,0 +1,14 @@
+runtime: nodejs22
+entrypoint: npm run server
+
+env_variables: 
+  GOOGLE_CLIENT_SECRET: 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
+  SESSION_SECRET: sdfhi3242sdfjoijsfFDSFsfj32432sljfdsij
+  DEV: false
+  DATABASE_NAME: database-1
+  DATABASE_PASSWORD: b6Y9PIHywCsZ8X8LbVGg
+  DATABASE_USERNAME: admin
+  DATABASE_ENDPOINT: database-1.chgca8mwg0bc.eu-west-1.rds.amazonaws.com
+  DATABASE_PORT: 3306
+  REDIS_PASSWORD: AUXEAAIjcDE3YzllMzA0YWE1OWE0YTY2OWI4OTkwODhjNjc3ZTNlY3AxMA
+  REDIS_ENDPOINT: rediss://key-dassie-17860.upstash.io:6379

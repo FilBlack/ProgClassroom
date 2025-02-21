@@ -1,11 +1,35 @@
 import { Sequelize, DataTypes, Model, Op } from 'sequelize';
 import type {InferAttributes, InferCreationAttributes, CreationOptional} from 'sequelize'
-// Initialize Sequelize instance
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: './database.sqlite', // Path to SQLite database file
-  logging: false,
+import mysql from 'mysql2/promise';
+
+
+const connection = await mysql.createConnection({
+  host: process.env.DATABASE_ENDPOINT,
+  port: Number(process.env.DATABASE_PORT),
+  user: process.env.DATABASE_USERNAME,
+  password: process.env.DATABASE_PASSWORD
 });
+
+// Create the database if it doesn't exist
+await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DATABASE_NAME}\`;`);
+await connection.end();
+
+let sequelize : Sequelize
+if ((process.env.DEV === "true")) {
+  console.log("Using sqlite")
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: './database.sqlite', // Path to SQLite database file
+    logging: false,
+  });
+} else {
+  console.log("Using mysql")
+  sequelize = new Sequelize(process.env.DATABASE_NAME, process.env.DATABASE_USERNAME, process.env.DATABASE_PASSWORD, {
+    host: process.env.DATABASE_ENDPOINT, 
+    port: Number(process.env.DATABASE_PORT),
+    dialect: 'mysql' 
+  }); 
+}
 
 // Define User model with proper types
 class ProgUser extends Model<InferAttributes<ProgUser>, InferCreationAttributes<ProgUser>> {
@@ -253,9 +277,17 @@ ClassroomStudents.init(
 // Sync models with database
 (async () => {
   try {
-    await sequelize.query('PRAGMA foreign_keys = OFF');
+    // Only run PRAGMA commands if we're using SQLite.
+    if (sequelize.getDialect() === 'sqlite') {
+      await sequelize.query('PRAGMA foreign_keys = OFF');
+    }
+
     await sequelize.sync({ alter: true });
-    await sequelize.query('PRAGMA foreign_keys = ON');
+
+    if (sequelize.getDialect() === 'sqlite') {
+      await sequelize.query('PRAGMA foreign_keys = ON');
+    }
+
     console.log('Database & tables created!');
   } catch (error) {
     console.error('Error syncing database:', error);

@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
 import { handler } from "./build/handler.js"
 import express from 'express'
@@ -9,6 +10,10 @@ import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid'
 import { sequelize, Op, Classroom, Quiz, QuizStudent, ClassroomStudents, ProgUser} from './models.js';
 import './passport.js'
+import redis from 'redis'
+import {RedisStore} from "connect-redis"
+
+
 
 declare global {
   namespace Express {
@@ -16,25 +21,65 @@ declare global {
   }
 }
 
-
 declare module "express-session" {
   interface SessionData {
     position?: string;
   }
 }
 
-let port = 3000
+// Redis session storage
+if (!(process.env.DEV === "true")) {
+  var redisClient = redis.createClient({
+    url: process.env.REDIS_ENDPOINT,
+    password: process.env.REDIS_PASSWORD,
+    socket: { tls: true, rejectUnauthorized: false }
+  });
+  
+  // Attach extensive logging on Redis client events
+  redisClient.on('connect', () => console.log('[Redis] Client connected.'));
+  redisClient.on('ready', () => console.log('[Redis] Client ready to use.'));
+  redisClient.on('reconnecting', () => console.log('[Redis] Reconnecting...'));
+  redisClient.on('end', () => console.log('[Redis] Client connection closed.'));
+  redisClient.on('error', (err) => console.error('[Redis] Client Error:', err));
+  
+  (async () => {
+    console.log('[Redis] Attempting to connect...');
+    try {
+      await redisClient.connect();
+      console.log('[Redis] Connected successfully.');
+    } catch (err) {
+      console.error('[Redis] Could not connect:', err);
+    }
+  })();
+}
+
 const app: Express = express();
 app.use(bodyParser.json());  // Parse JSON request bodies
 app.use(cookieParser());
 
 const sessionSecret: string = String(process.env.GOOGLE_CLIENT_SECRET);
 
-app.use(session({
+if ((process.env.DEV === "true")) {
+  app.use(session({
+      secret: sessionSecret,
+      resave: true,
+      saveUninitialized: true
+  }));
+
+} else {
+  app.use(session({
+    store: new RedisStore({ client: redisClient }),
     secret: sessionSecret,
     resave: true,
-    saveUninitialized: true
-}));
+    saveUninitialized: true,
+    cookie: {
+      secure: false, // Set to true if using HTTPS
+      httpOnly: true,
+      maxAge: 1000 * 60 * 30, // Session expires after 30 minutes
+    },
+  }));
+}
+
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -711,6 +756,7 @@ cron.schedule('* * * * *', async () => {
 });
 
 
+let port = process.env.PORT || 3000
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });

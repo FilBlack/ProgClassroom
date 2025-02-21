@@ -240,7 +240,10 @@
         window.location.href = 'teacher_classroom_quiz'
     }
 </script>
-<Header />
+<Header returnPage="/teacher_classroom_list"
+classroomRedirect="/teacher_classroom_list"
+>
+</Header>
 
 
 <h1> People</h1>

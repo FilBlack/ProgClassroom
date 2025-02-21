@@ -3,17 +3,21 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import 'dotenv-esm/config';
 import {sequelize, ProgUser} from './models.js'
 import { profileEnd } from 'node:console';
+import { BOOLEAN } from 'sequelize';
 type PassportUser = InstanceType<typeof ProgUser>;
 
 
 const clientSecret: string = String(process.env.GOOGLE_CLIENT_SECRET);
-
+const isDev: boolean = (process.env.DEV === "true")
+console.log("IN Passport isDev:")
+console.log(isDev)
 passport.use(
     new GoogleStrategy(
     {
         clientID: '271759399576-itntdu7bjsl48t2ddpfia49tu0r75aqh.apps.googleusercontent.com',
         clientSecret: clientSecret,
-        callbackURL: '/auth/google/callback',
+        callbackURL: isDev? 'http://localhost:5173/auth/google/callback':'/auth/google/callback' ,
+        proxy: true,
         passReqToCallback: true,
         scope: ['profile', 'email']
     },

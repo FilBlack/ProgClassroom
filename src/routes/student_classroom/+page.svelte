@@ -9,6 +9,7 @@
         name: string;
         question: string;
         open: boolean;
+        max_points: number;
         closeAt: string;
         type: 'plaintext' | 'code';
     }
@@ -17,6 +18,7 @@
         id: number;
         f_student_email: string;
         f_quiz_id: number;
+        max_points:number;
         answer: string | null;
         answered: boolean;
         points: number | null;
@@ -46,10 +48,14 @@
             throw new Error('Failed to fetch quizzes' );
         }
     }
-
+    let totalPoints: number = $state(0)
+    let totalMaxPoints: number = $state(0)
     onMount(async () => {
         combinedQuizzes = await getQuizzes();
-        console.log(combinedQuizzes);
+        for (const quiz of combinedQuizzes) {
+            totalMaxPoints += quiz.max_points
+            totalPoints += quiz.points
+        }
     });
     
     function quizRedirect(quiz_id: number) {
@@ -76,13 +82,20 @@
         });
     }
 
+    
 </script>
-<Header />
+<Header returnPage="/student_classroom_list"
+classroomRedirect="/student_classroom_list"
+>
+</Header>
 
 {#each combinedQuizzes as quiz, i}
     <button onclick={() => quizRedirect(quiz.id)}>{quiz.name}</button>
     {#if quiz.answered}
         Submitted
+        {#if quiz.points}
+        Points: {quiz.points}/{quiz.max_points}
+        {/if}
     {:else}
         Not submitted
     {/if}
@@ -91,8 +104,10 @@
     {:else}
         Closed
     {/if}
+    
 {/each}
 
+Total points: {totalPoints}/{totalMaxPoints}
 
 
 <Footer />

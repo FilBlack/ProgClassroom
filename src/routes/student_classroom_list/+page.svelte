@@ -36,7 +36,10 @@
     }
 
 </script>
-<Header />
+<Header returnPage="/"
+classroomRedirect="/student_classroom_list"
+>
+</Header>
 
 {#each classrooms as room, i}
     <button onclick={() => classroomRedirect(String(room.id))}>{room.name}</button>

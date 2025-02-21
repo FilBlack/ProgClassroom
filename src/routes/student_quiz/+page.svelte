@@ -174,7 +174,10 @@
         clearInterval(intervalId);
     });
 </script>
-<Header />
+<Header returnPage="/student_classroom"
+classroomRedirect="/student_classroom_list"
+>
+</Header>
 
 {#if !timeRunOut}
     Time left:

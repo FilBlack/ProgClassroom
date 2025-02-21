@@ -15,12 +15,12 @@
     
     let _mounted = false
     onMount(() => {
-      effectiveExtensions = [
-      ...extensions,
-      // Use a tagged version of the editable extension:
-      // (You might need to create a wrapper function if EditorView.editable.of doesn’t support a tag option directly.)
-      tagExtension(editableTag, EditorView.editable.of(!disabled))
-    ];
+      // effectiveExtensions = [
+      // ...extensions,
+      // // Use a tagged version of the editable extension:
+      // // (You might need to create a wrapper function if EditorView.editable.of doesn’t support a tag option directly.)
+      // tagExtension(editableTag, EditorView.editable.of(!disabled))
+    // ];
       _mounted = true
       return () => { _mounted = false }
     })
@@ -134,9 +134,9 @@
     export let disabled = true
 
 
-    $: effectiveExtensions = disabled 
-    ? [...extensions, EditorView.editable.of(false)]
-    : extensions
+    // $: effectiveExtensions = disabled 
+    // ? [...extensions, EditorView.editable.of(false)]
+    // : extensions
 
     $: if (view) {
       view.dispatch({
@@ -146,9 +146,9 @@
       });
     }
 
-    $: {
-      console.log('Effective Extensions:', effectiveExtensions);
-    }
+    // $: {
+    //   console.log('Effective Extensions:', effectiveExtensions);
+    // }
     $: disabled, console.log(disabled)
 
     
