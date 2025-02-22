@@ -25,7 +25,7 @@
     }
 
 
-    let combinedQuizzes: (Quiz & StudentQuiz)[] = $state([])
+    let combinedQuizzes: [Quiz, StudentQuiz][] = $state([])
     async function getQuizzes() {
         try {
             const currentClassroom :string = sessionStorage.getItem('currentClassroom')
@@ -39,8 +39,8 @@
             const response2 = await fetch(`getQuizStudentConnectionsByQuizIds?quizIds=${quizIds.join(',')}`)
             const connectionData: StudentQuiz[] = await response2.json()
             // Combine the quiz and connection into one for easier use 
-            const combinedData: (Quiz & StudentQuiz)[] = quizData.map((quiz, index) => {
-                return {...quiz, ...connectionData[index]}
+            const combinedData: [Quiz, StudentQuiz][] = quizData.map((quiz, index) => {
+                return [quiz, connectionData[index]]
             })
             return combinedData
         } catch (error) {
@@ -52,9 +52,9 @@
     let totalMaxPoints: number = $state(0)
     onMount(async () => {
         combinedQuizzes = await getQuizzes();
-        for (const quiz of combinedQuizzes) {
+        for (const [quiz, quizConnection] of combinedQuizzes) {
             totalMaxPoints += quiz.max_points
-            totalPoints += quiz.points
+            totalPoints += quizConnection.points
         }
     });
     
@@ -84,17 +84,17 @@
 
     
 </script>
-<Header returnPage="/student_classroom_list"
+<Header
 classroomRedirect="/student_classroom_list"
 >
 </Header>
 
-{#each combinedQuizzes as quiz, i}
+{#each combinedQuizzes as [quiz, quizConnection], i}
     <button onclick={() => quizRedirect(quiz.id)}>{quiz.name}</button>
-    {#if quiz.answered}
+    {#if quizConnection.answered}
         Submitted
-        {#if quiz.points}
-        Points: {quiz.points}/{quiz.max_points}
+        {#if quizConnection.points}
+        Points: {quizConnection.points}/{quiz.max_points}
         {/if}
     {:else}
         Not submitted

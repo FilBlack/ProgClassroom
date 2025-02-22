@@ -3,7 +3,14 @@
     import Footer from "../../lib/Footer.svelte"
     import { onMount, onDestroy } from 'svelte'
     import { get } from 'svelte/store'
-    import CodeMirror, { basicSetup } from '../../lib/CodeMirror.svelte'
+    // import CodeMirror, { basicSetup } from '../../lib/CodeMirror.svelte'
+    import CodeMirror from 'svelte-codemirror-editor'
+    import { javascript } from '@codemirror/lang-javascript'
+
+
+    let extensions = [
+        javascript(),
+    ];
 
     interface Quiz {
         id:number;
@@ -97,8 +104,8 @@
         }
     }
     // Bind the possibilities to answer 
-    let store: { ready: () => boolean; subscribe(cb: any): () => any; set(newValue: any): void; } = $state() // Bound to codeMirror component
     let plaintextAnswer: string = $state()
+    let code: string = $state(`console.log("Hello, CodeMirror!");`);
 
     function submitAnswer() {
         const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
@@ -106,7 +113,7 @@
         if (quiz.type === 'plaintext') {
             answerText = plaintextAnswer
         } else {
-            answerText = get(store)
+            answerText = code
         }
         fetch('/submitQuizAnswer', {
             method: 'POST',
@@ -158,8 +165,16 @@
         try {
             const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
             [quiz, quizConnection] = await getQuizAndConnectionById(currentQuizId)
+            console.log(quiz)
+            console.log(quizConnection)
             answerSubmitted = quizConnection.answered
             timeLeft = getTimeLeft(quiz.closeAt)
+            console.log("timeLeft")
+            console.log(timeLeft)
+            if (timeLeft.days+ timeLeft.hours + timeLeft.minutes + timeLeft.seconds === 0){
+                timeRunOut = true
+                console.log(timeRunOut)
+            }
             // Executes every second
             intervalId = setInterval(() => {
                 subtractSecond()
@@ -174,7 +189,7 @@
         clearInterval(intervalId);
     });
 </script>
-<Header returnPage="/student_classroom"
+<Header
 classroomRedirect="/student_classroom_list"
 >
 </Header>
@@ -195,10 +210,7 @@ classroomRedirect="/student_classroom_list"
         {#if (quiz.type === "plaintext")}
             <textarea name="plaintext_answer" id="plaintext_answer" bind:value={plaintextAnswer} disabled={answerSubmitted}>{quizConnection.answer ?  quizConnection.answer : " " }</textarea>
         {:else}
-            <CodeMirror doc={quizConnection.answer ?  quizConnection.answer : " " }
-            bind:docStore={store}
-            extensions={basicSetup}
-            disabled={answerSubmitted}></CodeMirror>
+            <CodeMirror bind:value={code} {extensions} editable={!answerSubmitted} />
         {/if}
         {#if answerSubmitted}
             <button onclick={unsubmitAnswer}>Unsubmit</button>

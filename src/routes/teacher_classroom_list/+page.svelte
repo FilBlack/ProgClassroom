@@ -83,7 +83,7 @@
     }
 
 </script>
-<Header returnPage="/"
+<Header 
 classroomRedirect="/teacher_classroom_list"
 >
 </Header>

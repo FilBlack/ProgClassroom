@@ -36,7 +36,7 @@
     }
 
 </script>
-<Header returnPage="/"
+<Header
 classroomRedirect="/student_classroom_list"
 >
 </Header>

@@ -158,7 +158,7 @@ app.get('/getClassroomsByStudent', async (req : Request, res :Response) => {
         where: { f_student_email: studentEmail }
       });
     
-      const classroomIds = classroomStudents.map(classroom => classroom.id);
+      const classroomIds = classroomStudents.map(classroom => classroom.f_classroom_id);
       const classrooms = await Promise.all(
         classroomIds.map(id => Classroom.findOne({ where: { id } }))
       );

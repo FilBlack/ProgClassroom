@@ -25,8 +25,14 @@ const config = defineConfig({
 	},
 	resolve: {
 		extensions: ['.svelte', 'svelte.ts', '.js', 'svelte.js']
-	  }
+	  },
+	optimizeDeps: {
+        exclude: ["svelte-codemirror-editor", "codemirror", "@codemirror/language-javascript"],
+    },
+	ssr: {
+		noExternal: ['svelte-codemirror-editor']
+	}
+	  
 });
 
-console.log('Proxy configuration:', config.server?.proxy);
 export default config

@@ -68,7 +68,7 @@
         console.log(combinedStudents);
     });
 </script>
-<Header returnPage="/teacher_classroom"
+<Header
 classroomRedirect="/teacher_classroom_list"
 >
 </Header>

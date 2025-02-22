@@ -3,7 +3,14 @@
     import Footer from "../../lib/Footer.svelte"
     import { onMount, onDestroy } from 'svelte'
     import { get } from 'svelte/store'
-    import CodeMirror, { basicSetup } from '../../lib/CodeMirror.svelte'
+    // import CodeMirror, { basicSetup } from '../../lib/CodeMirror.svelte'
+    import CodeMirror from 'svelte-codemirror-editor'
+    import { javascript } from '@codemirror/lang-javascript'
+
+
+    let extensions = [
+        javascript(),
+    ];
 
     interface Quiz {
         id:number;
@@ -91,8 +98,7 @@
         .catch(error => console.error('Error:', error));
     }
 
-    let isDisabled: boolean = $state()
-    let store: { ready: () => boolean; subscribe(cb: any): () => any; set(newValue: any): void; } = $state() // Bound to codeMirror component
+    let code: string = $state("")
     let quiz: Quiz | null = $state()
     let quizConnection: StudentQuiz = $state()
     let commentSubmitted: boolean = $state(false)
@@ -103,14 +109,16 @@
             const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));;
             [quiz, quizConnection] = await getQuizAndConnectionById(currentQuizId)
             commentSubmitted = quizConnection.graded
-            isDisabled = true
+            if (quizConnection.answered) {
+                code = quizConnection.answer
+            } 
         } catch (error) {
             console.log(error)
         }
     })
 
 </script>
-<Header returnPage="/teacher_classroom_quiz"
+<Header
 classroomRedirect="/teacher_classroom_list"
 >
 </Header>
@@ -125,10 +133,9 @@ classroomRedirect="/teacher_classroom_list"
         {#if (quiz.type === "plaintext")}
             <textarea name="plaintext_answer" id="plaintext_answer" disabled>{quizConnection.answer ?  quizConnection.answer : " " }</textarea>
         {:else}
-            <CodeMirror doc={quizConnection.answer ?  quizConnection.answer : " " }
-            bind:docStore={store}
-            extensions={basicSetup}
-            disabled={isDisabled}></CodeMirror>
+        {#if code !== ''}
+            <CodeMirror bind:value={code} {extensions} editable={false}></CodeMirror>
+        {/if}
         {/if}
     {:else}
         {#if quiz.open}
