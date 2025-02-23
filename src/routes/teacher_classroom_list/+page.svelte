@@ -88,21 +88,80 @@ classroomRedirect="/teacher_classroom_list"
 >
 </Header>
 
-Your classrooms: 
 
-{#each classrooms as room, i}
-    <button onclick={() => classroomRedirect(String(room.id))}>{room.name}</button>
-    <button id={room.name +"remove"} onclick={() => removeClassroom(room)}>remove classroom</button>
-{/each}
+<div id="your_classrooms">
+    Your classrooms: 
+</div>
+
+<div id="classroom_list">
+    {#each classrooms as room, i}
+        <div class="classroom">
+            <button class="classroom_name" onclick={() => classroomRedirect(String(room.id))}>{room.name}</button>
+            <button class="delete_button" id={room.name +"remove"} onclick={() => removeClassroom(room)}>remove</button>
+        </div>
+    {/each}
+</div>
 
 
+<div id="classroom_add_section">
+    <div id="Add_wraper">
+        <label for="AddClassroom">Add Classroom: </label>
+        <input type="text" name="AddClassroom" id="AddClassroom">
+        <button id="AddClassroomButton" onclick={AddClassroom}>Add</button>
+    </div>
+    {#if (ClassroomAddMessageActive)}
+        The classroom has been added!
+    {/if}
+</div>
 
-<label for="AddClassroom">Add Classroom</label>
-<input type="text" name="AddClassroom" id="AddClassroom">
-<button id="AddClassroomtButton" onclick={AddClassroom}>Add</button>
-
-{#if (ClassroomAddMessageActive)}
-    The classroom has been added
-{/if}
 
 <Footer />
+
+<style>
+    #classroom_list {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: column;
+    }
+    .classroom {
+        display: flex;
+        flex-direction: row;
+    }
+    .classroom_name {
+        margin: 0 2em 0 1.5em;
+        width: 10em;
+        text-align: left;
+    }
+    .classroom_name:hover {
+        color: blue
+    }
+    .delete_button:hover {
+        color: red;
+    }
+
+    #your_classrooms {
+        margin-left: 1em;
+        margin-bottom: 1em;
+        font-size: 1.5em;
+    }
+    
+    #classroom_add_section {
+        margin-top: 3em;
+        display:flex;
+        flex-direction: column;
+        margin-bottom: 4em;
+        margin-left: 1.5em;
+    }
+
+    #AddClassroom {
+        border: solid 2px rgba(0, 0, 0, 0.5);
+        border-radius: 12px;
+        padding: 5px;
+        padding-left: 10px;
+
+    }
+
+    #AddClassroomButton {
+        width: 4em;
+    }
+</style>

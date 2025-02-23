@@ -40,11 +40,31 @@
 classroomRedirect="/student_classroom_list"
 >
 </Header>
-
-{#each classrooms as room, i}
-    <button onclick={() => classroomRedirect(String(room.id))}>{room.name}</button>
-{/each}
+<div id="your_classrooms_tag">Your classrooms:</div>
+<div id="classroom_wrapper">
+    {#each classrooms as room, i}
+        <button class="classroom" onclick={() => classroomRedirect(String(room.id))}>{room.name}</button>
+    {/each}
+</div>
 
 
 
 <Footer />
+
+<style>
+    #your_classrooms_tag {
+        font-size:30px;
+        margin-left: 1em;
+    }
+    #classroom_wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+    .classroom {
+        text-align: left;
+        margin-left: 2em;
+    }
+    .classroom:hover {
+        color: blue;
+    }
+</style>

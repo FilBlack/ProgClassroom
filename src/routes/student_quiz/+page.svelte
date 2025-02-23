@@ -3,7 +3,6 @@
     import Footer from "../../lib/Footer.svelte"
     import { onMount, onDestroy } from 'svelte'
     import { get } from 'svelte/store'
-    // import CodeMirror, { basicSetup } from '../../lib/CodeMirror.svelte'
     import CodeMirror from 'svelte-codemirror-editor'
     import { javascript } from '@codemirror/lang-javascript'
 
@@ -161,6 +160,8 @@
     let answerSubmitted: boolean = $state()
     let intervalId: number;
     let timeLeft: {days: number, hours: number, minutes: number, seconds:number} = $state({days: 0, hours: 0, minutes: 0, seconds:0})
+    let timeChecked: boolean = $state(false)
+    let submissionChecked: boolean = $state(false)
     onMount(async () => {
         try {
             const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
@@ -168,6 +169,7 @@
             console.log(quiz)
             console.log(quizConnection)
             answerSubmitted = quizConnection.answered
+            submissionChecked = true
             timeLeft = getTimeLeft(quiz.closeAt)
             console.log("timeLeft")
             console.log(timeLeft)
@@ -175,6 +177,7 @@
                 timeRunOut = true
                 console.log(timeRunOut)
             }
+            timeChecked = true
             // Executes every second
             intervalId = setInterval(() => {
                 subtractSecond()
@@ -193,30 +196,77 @@
 classroomRedirect="/student_classroom_list"
 >
 </Header>
+<div id="meta_wrapper">
 
-{#if !timeRunOut}
-    Time left:
-    {timeLeft.days} days, {timeLeft.hours} hours, {timeLeft.minutes} minutes, {timeLeft.seconds} seconds
-{:else}
-    Quiz is closed
-{/if}
-
-{#if quiz}
-    Question:
-    {quiz.question}
-
-    {#if !timeRunOut}
-        Your Answer:
-        {#if (quiz.type === "plaintext")}
-            <textarea name="plaintext_answer" id="plaintext_answer" bind:value={plaintextAnswer} disabled={answerSubmitted}>{quizConnection.answer ?  quizConnection.answer : " " }</textarea>
+    <div id="time_left">
+        {#if !timeRunOut && timeChecked}
+            <div id="time_left_left"class="bold">Time left:</div>
+            <div>{timeLeft.days} days, {timeLeft.hours} hours, {timeLeft.minutes} minutes, {timeLeft.seconds} seconds</div>
         {:else}
-            <CodeMirror bind:value={code} {extensions} editable={!answerSubmitted} />
+            Quiz is closed
         {/if}
-        {#if answerSubmitted}
-            <button onclick={unsubmitAnswer}>Unsubmit</button>
-        {:else}
-            <button onclick={submitAnswer}>Submit</button>
-        {/if}
+    </div>
+    
+    {#if quiz}
+        <div id="question_wrapper">
+            <div id="question">
+                <div id="question_left" class="bold">Question: </div> {quiz.question}
+            </div>
+        
+            {#if !timeRunOut}
+                <div id="answer">
+                    {#if (quiz.type === "plaintext")}
+                        <textarea name="plaintext_answer" id="plaintext_answer" bind:value={plaintextAnswer} disabled={answerSubmitted}>{quizConnection.answer ?  quizConnection.answer : " " }</textarea>
+                    {:else if submissionChecked}
+                        <CodeMirror bind:value={code} {extensions} editable={!answerSubmitted} />
+                    {/if}
+                </div>
+                <div id="submission">
+                    {#if answerSubmitted}
+                        <button onclick={unsubmitAnswer}>Unsubmit</button>
+                    {:else}
+                        <button onclick={submitAnswer}>Submit</button>
+                    {/if}
+                </div>
+            {/if}
+        </div>
     {/if}
-{/if}
+
+</div>
 <Footer />
+
+<style>
+    #question_left {
+        margin-right: 0.5em;
+    }
+    #meta_wrapper {
+        display: flex;
+        flex-direction: column;
+        margin-left: 1em;
+    }
+    .bold {
+        font-weight: 600;
+    }
+    #question {
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 0.5em;
+    }
+    #time_left {
+        display: flex;
+        flex-direction: row;
+    }
+    #time_left_left {
+        margin-right: 0.5em;
+    }
+    textarea {
+        width: 100vw;
+    }
+    #submission {
+        width: 100vw;
+        text-align: center;
+    }
+    #answer {
+        margin-left: -1em;
+    }
+</style>

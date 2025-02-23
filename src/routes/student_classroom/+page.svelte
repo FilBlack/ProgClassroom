@@ -72,7 +72,7 @@
         }
 
         // "Month Day, Year, Hour:Minute AM/PM"
-        return date.toLocaleString("cs-CZ", {
+        return date.toLocaleString("en-GB", {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -88,26 +88,85 @@
 classroomRedirect="/student_classroom_list"
 >
 </Header>
+<div id="quizzes_tag">Quizzes</div>
+<div id="quiz_wrapper">
 
-{#each combinedQuizzes as [quiz, quizConnection], i}
-    <button onclick={() => quizRedirect(quiz.id)}>{quiz.name}</button>
-    {#if quizConnection.answered}
-        Submitted
-        {#if quizConnection.points}
-        Points: {quizConnection.points}/{quiz.max_points}
-        {/if}
-    {:else}
-        Not submitted
-    {/if}
-    {#if quiz.open}
-        {formatCloseAt(quiz.closeAt)}
-    {:else}
-        Closed
-    {/if}
-    
-{/each}
-
-Total points: {totalPoints}/{totalMaxPoints}
+    <div class="quiz quiz_label">
+        <div class="quiz_name">Name:</div>
+        <div class="submission">
+            Submission:
+        </div>
+        <div class="closure">
+            Closes at:
+        </div>
+    </div>
+    {#each combinedQuizzes as [quiz, quizConnection], i}
+        <div class="quiz">
+            <button class="quiz_name" onclick={() => quizRedirect(quiz.id)}>{quiz.name}</button>
+            <div class="submission">
+                {#if quizConnection.answered}
+                    Submitted
+                    {#if quizConnection.points}
+                    {quizConnection.points}/{quiz.max_points}
+                    {/if}
+                {:else}
+                    Not submitted
+                {/if}
+            </div>
+            <div class="closure">
+                {#if quiz.open}
+                    {formatCloseAt(quiz.closeAt)}
+                {:else}
+                    Closed
+                {/if}
+            </div>
+        </div>
+        
+    {/each}
+</div>
+<div id="total_score">
+    Total score: {totalPoints}/{totalMaxPoints}
+</div>
 
 
 <Footer />
+
+<style>
+    #quizzes_tag {
+        margin-left:1em;
+        font-size: 30px;
+        margin-bottom: 1em;
+    }
+    #quiz_wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+    .quiz {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        margin-left: 2em;
+    }
+    .quiz_name {
+        width: 14em;
+        text-align: left;
+    }
+    .quiz_name:hover {
+        color:blue;
+    }
+    .submission {
+        width: 12em;
+    }
+
+    #total_score {
+        margin: 1em 0 0 1em;
+        font-size: 30px;
+    }
+
+    .quiz_label {
+        margin-left: 1.5em;
+        font-size: 28px;    
+        font-weight: 600;
+    }
+
+</style>

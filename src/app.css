@@ -7,3 +7,14 @@
 div {
     font-size: 26px;
 }
+
+textarea, input[type="text"], input[type="number"] {
+    border: solid 2px rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    padding: 5px;
+    padding-left: 10px;
+}
+
+.flatpickr-calendar * {
+    font-size: 14px !important
+}

@@ -74,17 +74,36 @@ classroomRedirect="/teacher_classroom_list"
 </Header>
 
 
-
-
-{#each combinedStudents as studentQuiz,i}
-    <button onclick={() => teacherQuizRedirect(studentQuiz)}>{studentQuiz.name}</button>
-    {#if studentQuiz.answered}
-        Answered
-    {:else}
-        Unanswered
-    {/if}
-
-{/each}
+<div id="students_tag">Students</div>
+<div id="studentlist">
+    {#each combinedStudents as studentQuiz,i}
+        <div id=student_wrapper>
+            <button class="student" onclick={() => teacherQuizRedirect(studentQuiz)}>{studentQuiz.name}</button>
+            {#if studentQuiz.answered}
+                Answered
+            {:else}
+                Unanswered
+            {/if}
+        </div>
+    {/each}
+</div>
 
 
 <Footer />
+
+<style>
+    #studentlist {
+        display: flex;
+        flex-direction: column;
+        margin-left: 2em;
+    }
+    .student:hover {
+        color: blue
+    }
+    #students_tag {
+        font-size: 30px;
+        margin-left: 1em;
+    }
+
+
+</style>

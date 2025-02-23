@@ -46,17 +46,26 @@
     display: flex;
     flex-wrap: nowrap;
     /* justify-content: space-between; */
-    height: 3vh;
+    height: em;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
 }
 
 #home_div, #sign_out_div{
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+
+#home_div:hover, #sign_out_div:hover {
+    color: green
 }
 
 #home_div {
     flex-grow: 1
 }
 
+* {
+    font-size: 30px
+}
 </style>
 

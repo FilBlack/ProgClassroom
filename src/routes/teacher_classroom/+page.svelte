@@ -225,7 +225,7 @@
         }
 
         // "Month Day, Year, Hour:Minute AM/PM"
-        return date.toLocaleString("cs-CZ", {
+        return date.toLocaleString("en-GB", {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -245,61 +245,220 @@ classroomRedirect="/teacher_classroom_list"
 >
 </Header>
 
-
-<h1> People</h1>
-{#each students as student,index}
-    <student id={"student" + index}>
-        {student.name}|{student.email}
-        <button onclick={() => removeStudent(student)}>remove</button>
-    </student>
-{/each}
-
-<div>Add Students</div>
-<label for="AddStudent">Email addresses: (delimetered by ;)</label>
-<textarea name="AddStudent" id="AddStudent"></textarea>
-<button id="AddStudentButton" onclick={AddStudents}>Add</button>
-{#if (StudentAddMessageActive)}
-    The users have been added
-{/if}
-<br>
-<br>
-<br>
-<h1>Quizes</h1>
-{#each quizes as quiz,index}
-    <student id={"quiz" + index}>
-        <button onclick={() => teacherQuizRedirect(quiz)}>{quiz.name}</button>
-        {#if quiz.open}
-            Closes at: {formatCloseAt(quiz.closeAt)}
-            <button onclick={() => closeQuiz(quiz)}>close </button>
-        {:else}
-            Closed
+<div id="student_meta_wrapper">
+    <div id="student_wrapper">
+        <div id="student_tag">
+            Students
+        </div>
+        {#each students as student,index}
+        <div class="student_and_remove">
+            <student id={"student" + index} class="student">
+                {student.name} | {student.email}
+            </student>
+            <button class="student_remove" onclick={() => removeStudent(student)}>remove</button>
+        </div>
+        {/each}
+    </div>
+    <div id="student_add_wraper">
+        <div id="student_add_tag">Add Students</div>
+        <label for="AddStudent">Email addresses: (delimetered by ;)</label>
+        <textarea name="AddStudent" id="AddStudent"></textarea>
+        <button id="AddStudentButton" onclick={AddStudents}>Add</button>
+        {#if (StudentAddMessageActive)}
+            The users have been added
         {/if}
-        
-        <button onclick={() => removeQuiz(quiz)}>remove</button>
-    </student>
-{/each}
+    </div>
+</div>
 
-<div>Add a quiz</div>
-<label for="AddQuizName">Name:</label>
-<textarea name="AddQuizName" id="AddQuizName"></textarea>
-<label for="AddQuizQuestion">Question:</label>
-<textarea name="AddQuizQuestion" id="AddQuizQuestion"></textarea>
-<label>
-    <input type="radio" name="quizType" value="plaintext" checked>
-    Plaintext
-</label>
-<label>
-    <input type="radio" name="quizType" value="code">
-    Code
-</label>
-<label for="quizMaxPoints">Max points:</label>
-<input id="quizMaxPoints" name="quizMaxPoints" type="number">
-<input bind:this={datepicker} type="text" placeholder="Select the closing time">
-<button id="AddQuizButton" onclick={AddQuiz}>Add</button>
-
-
-
-
+<br>
+<br>
+<br>
+<div id="quiz_meta_wrapper">
+    <div id="quiz_wrapper">
+        <div id="quiz_tag">Quizzes</div>
+        {#each quizes as quiz,index}
+            <div class="quiz_add_and_remove">
+                <quiz class="quiz" id={"quiz" + index}>
+                    <button onclick={() => teacherQuizRedirect(quiz)}>{quiz.name}</button>
+                </quiz>
+                <div class="closes_wrapper">
+                    {#if quiz.open}
+                    Closes at: {formatCloseAt(quiz.closeAt)} |
+                    <button class="close_quiz" onclick={() => closeQuiz(quiz)}>close </button>
+                    {:else}
+                    Closed
+                    {/if}
+                </div>
+                <div class="quiz_remove">
+                    <button onclick={() => removeQuiz(quiz)}>remove</button>
+                </div>
+            </div>
+        {/each}
+    </div>
+    <div id="add_quiz_wrapper">
+        <div id="add_quiz_tag">Add a quiz</div>
+        <div id="add_quiz_line_wrapper">
+            <label for="AddQuizName">Name:</label>
+            <textarea name="AddQuizName" id="AddQuizName"></textarea>
+            <label for="AddQuizQuestion">Question:</label>
+            <textarea name="AddQuizQuestion" id="AddQuizQuestion"></textarea>
+            <div id="radio_wrapper">
+                <label>
+                    <input type="radio" name="quizType" value="plaintext" checked>
+                    Plaintext
+                </label>
+                <label>
+                    <input type="radio" name="quizType" value="code">
+                    Code
+                </label>
+            </div>
+            <label for="quizMaxPoints">Max points:</label>
+            <input id="quizMaxPoints" name="quizMaxPoints" type="number">
+            <div id="datepicker">
+                <input  bind:this={datepicker} type="text" placeholder="Select the closing time">
+            </div>
+            <button id="AddQuizButton" onclick={AddQuiz}>Add</button>
+        </div>
+    </div>
+</div>
 
 
 <Footer />
+
+<style>
+    #student_meta_wrapper {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    #student_wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .student_remove:hover {
+        color: red
+    }
+
+    .student {
+        width: 20em;
+    }
+    .student_and_remove {
+        display: flex;
+        flex-direction: row;
+    }
+    #student_wrapper  {
+        margin-left: 2em;
+    }
+
+    #student_tag {
+        font-size: 30px;
+        margin-left: -1em;
+    }
+    #student_add_wraper {
+        margin-right: 3em;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #student_add_tag {
+        font-size: 30px;
+        margin-left: -1em;
+    }
+
+    #quiz_tag, #add_quiz_tag {
+        font-size: 30px;
+        margin-left: -1em;
+    }
+
+    #quiz_meta_wrapper {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    .quiz_add_and_remove {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+
+    }
+
+    #quiz_wrapper {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        margin-left: 2em;
+        margin-bottom: 2em;
+    }
+
+    .quiz {
+        width: 18em;
+    }
+
+    .closes_wrapper {
+        width: 23em;
+    }
+
+    .close_quiz {
+        margin: 0 1em 0 1em;
+    }
+
+    .quiz_remove {
+        margin: 0 1em 0 1em;
+    }
+
+    .close_quiz:hover , .quiz_remove:hover {
+        color: red;
+    }   
+
+    .quiz:hover {
+        color: blue
+    }
+
+    #add_quiz_wrapper {
+        display: flex;
+        flex-direction: column;
+        margin-left: 2em;
+        margin-bottom: 3em;
+    }
+
+    #quizMaxPoints {
+        width: 3em;
+    }
+
+    #add_quiz_line_wrapper {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    #radio_wrapper {
+        display: flex;
+        direction: row;
+        flex-wrap: wrap;
+        width: 5em;
+        margin-left: 0.5em;
+    }
+
+    #AddQuizName {
+        height: 2.5em;
+    }
+    
+    #add_quiz_line_wrapper,
+    #AddQuizName,
+    #AddQuizQuestion,
+    #radio_wrapper,
+    #quizMaxPoints,
+    #datepicker {
+        margin-left: 0.5em
+    }   
+
+    #AddQuizName, #datepicker {
+        margin-right: 0.5em
+    }
+</style>
+
+
+
