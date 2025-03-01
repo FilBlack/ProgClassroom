@@ -6,11 +6,12 @@
     import CodeMirror from 'svelte-codemirror-editor'
     import { javascript } from '@codemirror/lang-javascript'
 
-
+    // Define the mode of the code editor
     let extensions = [
         javascript(),
     ];
 
+    // Define all the neccessary interaces for typescript 
     interface Quiz {
         id:number;
         f_classroom_id: number;
@@ -28,20 +29,25 @@
         answer: string | null;
         answered: boolean;
         points: number | null;
+        graded: boolean;
+        comment: string;
     }
 
-    async function getQuizAndConnectionById(quizId: number) {
+    // Get a quiz and its corresponding connection to the student by its id
+    async function getQuizAndConnectionById(quizId: number): Promise<[Quiz, StudentQuiz]> {
         try {
-            const response = await fetch(`/getQuizById?quizId=${quizId}`);
+            // First get the quiz by its id
+            const response: Response = await fetch(`/getQuizById?quizId=${quizId}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const quiz = await response.json();
-            const response2 = await fetch(`/getQuizStudentConnection?quizId=${quizId}`);
+            const quiz : Quiz = await response.json();
+            // After we get the connection by the quiz id and the id of the student, which is saved on the session in the server
+            const response2: Response = await fetch(`/getQuizStudentConnection?quizId=${quizId}`);
             if (!response2.ok) {
                 throw new Error(`HTTP error! status: ${response2.status}`);
             }
-            const quizConnection = await response2.json();
+            const quizConnection: StudentQuiz = await response2.json();
             return [quiz, quizConnection];
         } catch (error) {
             console.error('Error:', error);
@@ -52,32 +58,34 @@
 
     // If the time has run out
     let timeRunOut: boolean = $state(false)
-    function getTimeLeft(isoString: string) {
-        const now = new Date();
-        const targetDate = new Date(isoString);
+    // Get the time left based on the ISO string
+    function getTimeLeft(isoString: string): { days:number, hours:number, minutes:number, seconds:number } {
+        const now : Date = new Date();
+        const targetDate : Date = new Date(isoString);
 
-        let diff = targetDate.getTime() - now.getTime();
+        let diff: number = targetDate.getTime() - now.getTime();
 
         // Ensure the difference is not negative (if the target date has passed)
         if (diff < 0) {
             timeRunOut = true
             return { days:0, hours:0, minutes:0, seconds:0 }
         }
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const days : number = Math.floor(diff / (1000 * 60 * 60 * 24));
         diff -= days * 1000 * 60 * 60 * 24;
 
-        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const hours : number = Math.floor(diff / (1000 * 60 * 60));
         diff -= hours * 1000 * 60 * 60;
 
-        const minutes = Math.floor(diff / (1000 * 60));
+        const minutes : number = Math.floor(diff / (1000 * 60));
         diff -= minutes * 1000 * 60;
 
-        const seconds = Math.floor(diff / 1000);
+        const seconds : number = Math.floor(diff / 1000);
 
         return { days, hours, minutes, seconds };
         }
-    // Runs every second to subtract time
-    function subtractSecond() {
+
+    // Runs every second to subtract time like a clock
+    function subtractSecond(): void{
         if (timeLeft.seconds === 0) {
             if(timeLeft.minutes === 0) {
                 if(timeLeft.hours === 0) {
@@ -102,18 +110,22 @@
             timeLeft.seconds -= 1
         }
     }
-    // Bind the possibilities to answer 
+
+    // The quiz is either code or plaintext, we bind both the possibilities to their states
     let plaintextAnswer: string = $state()
     let code: string = $state(`console.log("Hello, CodeMirror!");`);
 
-    function submitAnswer() {
+    // Submit the student's answer
+    function submitAnswer(): void {
         const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
+        // Asign the answer text based on code or plaintext
         let answerText: string
         if (quiz.type === 'plaintext') {
             answerText = plaintextAnswer
         } else {
             answerText = code
         }
+        // Post the data to the endpoint
         fetch('/submitQuizAnswer', {
             method: 'POST',
             headers: {
@@ -133,8 +145,10 @@
         .catch(error => console.error('Error:', error));
     }
 
-    function unsubmitAnswer() {
-        const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
+    // Unsubmit the student's answer
+    function unsubmitAnswer(): void {
+        const currentQuizId: number = Number(sessionStorage.getItem('currentQuiz'));
+        // Post the data to the endpoint 
         fetch('/unsubmitQuizAnswer', {
             method: 'POST',
             headers: {
@@ -158,24 +172,27 @@
     let quiz: Quiz | null = $state()
     let quizConnection: StudentQuiz = $state()
     let answerSubmitted: boolean = $state()
-    let intervalId: number;
-    let timeLeft: {days: number, hours: number, minutes: number, seconds:number} = $state({days: 0, hours: 0, minutes: 0, seconds:0})
-    let timeChecked: boolean = $state(false)
-    let submissionChecked: boolean = $state(false)
+    let intervalId: number; // The interval id so that we can close it later
+    let timeLeft: {days: number, hours: number, minutes: number, seconds:number} = $state({days: 0, hours: 0, minutes: 0, seconds:0}) // Timer
+    let timeChecked: boolean = $state(false) // Has the time been checked, so that we can load the content on the site? 
+    let submissionChecked: boolean = $state(false) // Have we checked if the student has submitted?
     onMount(async () => {
         try {
-            const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
+            // Get the id of th current quiz
+            const currentQuizId: number = Number(sessionStorage.getItem('currentQuiz')); 
+            // Get the quiz and the connection by the quiz id 
             [quiz, quizConnection] = await getQuizAndConnectionById(currentQuizId)
-            console.log(quiz)
-            console.log(quizConnection)
+            // Check if the student has answered
             answerSubmitted = quizConnection.answered
             submissionChecked = true
-            timeLeft = getTimeLeft(quiz.closeAt)
-            console.log("timeLeft")
-            console.log(timeLeft)
-            if (timeLeft.days+ timeLeft.hours + timeLeft.minutes + timeLeft.seconds === 0){
+            // If the quiz is open, start the timer, else set timeRunOut to true
+            if (quiz.open) {
+                timeLeft = getTimeLeft(quiz.closeAt)
+                if (timeLeft.days+ timeLeft.hours + timeLeft.minutes + timeLeft.seconds === 0){
+                    timeRunOut = true
+                }
+            } else {
                 timeRunOut = true
-                console.log(timeRunOut)
             }
             timeChecked = true
             // Executes every second
@@ -187,7 +204,7 @@
         }
     })
 
-    // Stop counting
+    // Stop counting 
     onDestroy(() => {
         clearInterval(intervalId);
     });
@@ -230,7 +247,13 @@ classroomRedirect="/student_classroom_list"
                 </div>
             {/if}
         </div>
+        {#if quizConnection.comment}
+        Teacher comment:
+        {quizConnection.comment}
     {/if}
+    {/if}
+
+    
 
 </div>
 <Footer />

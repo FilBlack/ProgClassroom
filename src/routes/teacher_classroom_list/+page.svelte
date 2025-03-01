@@ -3,14 +3,18 @@
     import Footer from "../../lib/Footer.svelte"
     import { onMount } from 'svelte'
 
+
+    // Define the neccessary interfaces for typescript 
     interface Classroom {
         id: number;
         name: string;
         studentsCount: number;
     }
 
+    // Stores all the classrooms that the teacher has 
     let classrooms: Classroom[] = $state([])
-    async function getClassrooms() {
+    // Get all the classrooms that the teacher is part of 
+    async function getClassrooms(): Promise<Classroom[] | null> {
         try {
             const response = await fetch('/getClassroomsByTeacher');
             if (!response.ok) {
@@ -24,21 +28,25 @@
         }
     }
 
+    // After the components have been mounted, get the classrooms and update the store
     onMount(async () => {
         classrooms = await getClassrooms();
-        console.log(classrooms);
     });
     
-    function classroomRedirect(classroom_id: string) {
+    // Redirect to the classroom that the teacher has selected
+    function classroomRedirect(classroom_id: string): void {
         sessionStorage.setItem('currentClassroom', classroom_id);
         window.location.href = 'teacher_classroom'
     }
 
+    // Whether the classroom added success message should be displayed or not
     let ClassroomAddMessageActive: boolean = $state(false)
 
+    // Add the classroom by its name
     async function AddClassroom() {
-        const classroomStringElement = document.getElementById('AddClassroom')
-        if (classroomStringElement instanceof HTMLInputElement) {
+        // Classroom name
+        const classroomStringElement:HTMLInputElement  = document.getElementById('AddClassroom') as HTMLInputElement
+        if (classroomStringElement) {
             fetch('/addClassroom', {
                 method: 'POST',
                 headers: {
@@ -62,6 +70,7 @@
             .catch(error => console.error('Error:', error));
         }
     }
+    // Remove the classroom through its corresponding classroom remove button
     async function removeClassroom(room: Classroom) {
         if (confirm(`Are you sure you want to delete ${room.name}?`)) {
             fetch('/removeClassroom', {
@@ -126,6 +135,7 @@ classroomRedirect="/teacher_classroom_list"
     .classroom {
         display: flex;
         flex-direction: row;
+        margin-bottom: 1em;
     }
     .classroom_name {
         margin: 0 2em 0 1.5em;
@@ -135,8 +145,20 @@ classroomRedirect="/teacher_classroom_list"
     .classroom_name:hover {
         color: blue
     }
+
+    .delete_button {
+        width: 6em;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
     .delete_button:hover {
         color: red;
+    }
+    .delete_button:active {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
     }
 
     #your_classrooms {
@@ -161,7 +183,42 @@ classroomRedirect="/teacher_classroom_list"
 
     }
 
+    #AddClassroomButton:active  {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
+    }
+
+    #AddClassroomButton:hover{
+        border: 1px solid rgba(0, 0, 255, 0.2);
+        color: blue;
+    }
+
     #AddClassroomButton {
         width: 4em;
+        text-align: center;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
+
+    .classroom_name {
+        width: 10em;
+        margin-right: 4em;
+        text-align: center;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
+
+    .classroom_name:active {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
+    }
+
+    .classroom_name:hover {
+        border: 1px solid rgba(0, 0, 255, 0.2);
+        color: blue;
     }
 </style>

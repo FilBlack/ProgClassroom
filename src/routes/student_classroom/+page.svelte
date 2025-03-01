@@ -3,6 +3,7 @@
     import Footer from "../../lib/Footer.svelte"
     import { onMount } from 'svelte'
 
+    // Define the necessary interfaces for typescript
     interface Quiz {
         id:number;
         f_classroom_id: number;
@@ -22,11 +23,13 @@
         answer: string | null;
         answered: boolean;
         points: number | null;
+        graded: boolean;
+        comment: string;
     }
 
-
+    // Combined quiz and corresponding student quiz connection information
     let combinedQuizzes: [Quiz, StudentQuiz][] = $state([])
-    async function getQuizzes() {
+    async function getQuizzes() : Promise<[Quiz, StudentQuiz][]> {
         try {
             const currentClassroom :string = sessionStorage.getItem('currentClassroom')
             const response = await fetch(`/getQuizzesByStudentAndClassroom?currentClassroom=${currentClassroom}`);
@@ -48,21 +51,28 @@
             throw new Error('Failed to fetch quizzes' );
         }
     }
+    // Total points the student got in the classroom
     let totalPoints: number = $state(0)
+    // Maximum points he could have gotten in the classroom 
     let totalMaxPoints: number = $state(0)
+    // Triggers when the components are mounted
     onMount(async () => {
         combinedQuizzes = await getQuizzes();
+        // Add up all the points
         for (const [quiz, quizConnection] of combinedQuizzes) {
             totalMaxPoints += quiz.max_points
             totalPoints += quizConnection.points
         }
     });
     
-    function quizRedirect(quiz_id: number) {
+    // Redirect the student to the quiz he has selected
+    function quizRedirect(quiz_id: number) : void{
+        // We save the current quiz id in the session for later use
         sessionStorage.setItem('currentQuiz', String(quiz_id));
         window.location.href = 'student_quiz'
     }
 
+    // Format the close at date from the ISO string to human readable
     function formatCloseAt(ISO: string): string {
         const date = new Date(ISO);
         
@@ -92,12 +102,15 @@ classroomRedirect="/student_classroom_list"
 <div id="quiz_wrapper">
 
     <div class="quiz quiz_label">
-        <div class="quiz_name">Name:</div>
+        <div class="quiz_name_special">Name:</div>
         <div class="submission">
             Submission:
         </div>
         <div class="closure">
             Closes at:
+        </div>
+        <div class=graded>
+            Graded:
         </div>
     </div>
     {#each combinedQuizzes as [quiz, quizConnection], i}
@@ -118,6 +131,13 @@ classroomRedirect="/student_classroom_list"
                     {formatCloseAt(quiz.closeAt)}
                 {:else}
                     Closed
+                {/if}
+            </div>
+            <div class="graded">
+                {#if quizConnection.graded}
+                    Graded
+                {:else}
+                    Not graded
                 {/if}
             </div>
         </div>
@@ -146,14 +166,32 @@ classroomRedirect="/student_classroom_list"
         flex-direction: row;
         flex-wrap: nowrap;
         margin-left: 2em;
+        margin-bottom: 1em;
     }
-    .quiz_name {
+    .quiz_name_special {
         width: 14em;
         text-align: left;
     }
-    .quiz_name:hover {
-        color:blue;
+    .quiz_name {
+        width: 10em;
+        margin-right: 4em;
+        text-align: center;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
     }
+
+    .quiz_name:active {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
+    }
+
+    .quiz_name:hover {
+        border: 1px solid rgba(0, 0, 255, 0.2);
+        color: blue;
+    }
+    
     .submission {
         width: 12em;
     }
@@ -167,6 +205,10 @@ classroomRedirect="/student_classroom_list"
         margin-left: 1.5em;
         font-size: 28px;    
         font-weight: 600;
+    }
+
+    .closure {
+        width: 12em;
     }
 
 </style>

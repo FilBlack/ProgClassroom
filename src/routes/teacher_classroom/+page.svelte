@@ -5,6 +5,7 @@
     import flatpickr from 'flatpickr';
     import 'flatpickr/dist/flatpickr.css';
 
+    // Initialize the flatpick, so that the teacher can choose th closing time 
     let datepicker: HTMLElement;
     let selectedDateTime: null | string = null; 
     onMount(() => {
@@ -18,7 +19,8 @@
             }
         });
     });
-
+    
+    // Define the neccessary interfaces for typescript 
     interface ProgUser {
             id: number,
             googleId: string,
@@ -27,18 +29,32 @@
             profilePicture: string,
             position: string,
     }
+
+    interface Quiz {
+            id: number,
+            f_classroom_id: number,
+            name: string ,
+            question: string,
+            open: boolean,
+            closeAt: string,
+            max_points: number,
+            type: 'plaintext' | 'code',
+    }
     
+    // Students in the classroom state
     let students: ProgUser[] = $state();
 
     onMount(() => {
-    const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
-    if (!currentClassroom) {
-        console.error('No currentClassroom found in sessionStorage.');
-        return;
-    } else {
-        fetchStudentsByClassroom(currentClassroom)
-    }
+        // After all components are mounted we try and get all the students that belong to the classroom if we find the classroom id
+        const currentClassroom: number = Number(sessionStorage.getItem('currentClassroom'));
+        if (!currentClassroom) {
+            console.error('No currentClassroom found in sessionStorage.');
+            return;
+        } else {
+            fetchStudentsByClassroom(currentClassroom)
+        }
     })
+    // Fetch the students in a classroom by the classroom id
     function fetchStudentsByClassroom(currentClassroom:number): void {
         fetch(`/getStudentsByClassroom?classroomId=${currentClassroom}`)
             .then(response => {
@@ -48,20 +64,23 @@
                 return response.json();
             })
             .then(student_data => {
-                    students = student_data;
+                // Update the state
+                students = student_data;
             }).catch(error => {
                 console.error('Error fetching students by classroom:', error);
             })
         }
-    
+    // Whether to display the message that the student was added susccessfuly 
     let StudentAddMessageActive: boolean = $state(false)
 
+    // Add all the students delimetered by ; 
     function AddStudents() {
-        const studentTextArea = document.getElementById("AddStudent") as HTMLTextAreaElement
+        const studentTextArea: HTMLTextAreaElement = document.getElementById("AddStudent") as HTMLTextAreaElement
         const studentString:string = studentTextArea.value
         const studentList: string[] = studentString.split(';').map(item => item.trim())
         //Get the classroom id from session
         const currentClassroom = sessionStorage.getItem("currentClassroom")
+        // Post the data to the server 
         fetch('/addStudentsToClassroom', {
             method: 'POST',
             headers: {
@@ -74,12 +93,16 @@
             // Now enable the success message for a few seconds
             StudentAddMessageActive = true
             studentTextArea.value = ""
+            // Update the students that are displayed 
             fetchStudentsByClassroom(Number(currentClassroom))
+            // Display the success message 
             setTimeout(() => {
                 StudentAddMessageActive = false;
             }, 3000);})
         .catch(error => console.error('Error:', error));
     }
+
+    // Function to remove a student from the current classroom 
     async function removeStudent(student: ProgUser) {
         if (confirm(`Are you sure you want to remove ${student.name}?`)) {
             const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
@@ -100,30 +123,21 @@
             .catch(error => console.error('Error:', error));
         }
     }
-
-    //Quiz section 
-    interface Quiz {
-            id: number,
-            f_classroom_id: number,
-            name: string ,
-            question: string,
-            open: boolean,
-            closeAt: string,
-            max_points: number,
-            type: 'plaintext' | 'code',
-    }
     
+    // The quizzes in the classroom to be displayed to the teacher
     let quizes: Quiz[] = $state();
 
     onMount(() => {
-    const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
-    if (!currentClassroom) {
-        console.error('No currentClassroom found in sessionStorage.');
-        return;
-    } else {
-        fetchQuizesByClassroom(currentClassroom)
-    }
+        // Fetch the quizzes in the classroom and update them
+        const currentClassroom: number = Number(sessionStorage.getItem('currentClassroom'));
+        if (!currentClassroom) {
+            console.error('No currentClassroom found in sessionStorage.');
+            return;
+        } else {
+            fetchQuizesByClassroom(currentClassroom)
+        }
     })
+    // Function to fetch the quizzes and update the state with them
     function fetchQuizesByClassroom(currentClassroom:number): void {
         fetch(`/getQuizesByClassroom?classroomId=${currentClassroom}`)
             .then(response => {
@@ -138,16 +152,16 @@
                 console.error('Error fetching students by classroom:', error);
             })
         }
-    
+    // Whether to the display the message that the adding of a quiz was successful
     let quizAddMessageActive: boolean = $state(false)
-
     function AddQuiz() { 
-        const quizNameTextArea = document.getElementById("AddQuizName") as HTMLTextAreaElement
-        const quizQuestionTextArea = document.getElementById("AddQuizQuestion") as HTMLTextAreaElement
-        const selectedModeElement = document.querySelector('input[name="quizType"]:checked') as HTMLInputElement
-        const selectedMaxPointsElement = document.getElementById('quizMaxPoints') as HTMLInputElement
-        //Get the classroom id from session
-        const currentClassroom = sessionStorage.getItem("currentClassroom")
+        const quizNameTextArea: HTMLTextAreaElement = document.getElementById("AddQuizName") as HTMLTextAreaElement
+        const quizQuestionTextArea: HTMLTextAreaElement = document.getElementById("AddQuizQuestion") as HTMLTextAreaElement
+        const selectedModeElement: HTMLInputElement = document.querySelector('input[name="quizType"]:checked') as HTMLInputElement
+        const selectedMaxPointsElement: HTMLInputElement = document.getElementById('quizMaxPoints') as HTMLInputElement
+        // Get the classroom id from session
+        const currentClassroom: string = sessionStorage.getItem("currentClassroom")
+        // Post the data to the endpoint 
         fetch('/addQuizToClassroom', {
             method: 'POST',
             headers: {
@@ -174,9 +188,10 @@
             }, 3000);})
         .catch(error => console.error('Error:', error));
     }
+    // Remove the seleteced quiz 
     async function removeQuiz(quiz: Quiz) {
         if (confirm(`Are you sure you want to remove ${quiz.name}?`)) {
-            const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
+            const currentClassroom: number = Number(sessionStorage.getItem('currentClassroom'));
             fetch('/removeQuiz', {
                 method: 'POST',
                 headers: {
@@ -185,7 +200,6 @@
                 body: JSON.stringify({quizId: quiz.id})
             })
             .then(response => {
-                console.log(response)
                 return response.json()
             })
             .then(async (data) =>  {
@@ -194,10 +208,11 @@
             .catch(error => console.error('Error:', error));
         }
     }
-
+    // Close a quiz to the public 
     async function closeQuiz(quiz: Quiz) {
         if (confirm(`Are you sure you want to close ${quiz.name}?`)) {
-            const currentClassroom = Number(sessionStorage.getItem('currentClassroom'));
+            const currentClassroom: number = Number(sessionStorage.getItem('currentClassroom'));
+            // Send the data to the endpoint 
             fetch('/closeQuiz', {
                 method: 'POST',
                 headers: {
@@ -206,7 +221,6 @@
                 body: JSON.stringify({quizId: quiz.id})
             })
             .then(response => {
-                console.log(response)
                 return response.json()
             })
             .then(async (data) =>  {
@@ -216,8 +230,9 @@
         }
     }
 
+    // Format the date from the ISO string to a human readable format 
     function formatCloseAt(ISO: string): string {
-        const date = new Date(ISO);
+        const date: Date = new Date(ISO);
         
         // Check if the ISO string is a valid date
         if (isNaN(date.getTime())) {
@@ -235,6 +250,7 @@
         });
     }
 
+    // Redirect the teacher to the selected quiz 
     function teacherQuizRedirect(quiz: Quiz) {
         sessionStorage.setItem('currentQuiz', String(quiz.id));
         window.location.href = 'teacher_classroom_quiz'
@@ -278,9 +294,7 @@ classroomRedirect="/teacher_classroom_list"
         <div id="quiz_tag">Quizzes</div>
         {#each quizes as quiz,index}
             <div class="quiz_add_and_remove">
-                <quiz class="quiz" id={"quiz" + index}>
-                    <button onclick={() => teacherQuizRedirect(quiz)}>{quiz.name}</button>
-                </quiz>
+                <button class="quiz" id={"quiz" + index} onclick={() => teacherQuizRedirect(quiz)}>{quiz.name}</button>
                 <div class="closes_wrapper">
                     {#if quiz.open}
                     Closes at: {formatCloseAt(quiz.closeAt)} |
@@ -289,9 +303,7 @@ classroomRedirect="/teacher_classroom_list"
                     Closed
                     {/if}
                 </div>
-                <div class="quiz_remove">
-                    <button onclick={() => removeQuiz(quiz)}>remove</button>
-                </div>
+                <button class="quiz_remove" onclick={() => removeQuiz(quiz)}>remove</button>
             </div>
         {/each}
     </div>
@@ -347,6 +359,7 @@ classroomRedirect="/teacher_classroom_list"
     .student_and_remove {
         display: flex;
         flex-direction: row;
+        margin-bottom: 0.5em;
     }
     #student_wrapper  {
         margin-left: 2em;
@@ -382,7 +395,7 @@ classroomRedirect="/teacher_classroom_list"
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
-
+        margin-bottom: 0.5em;
     }
 
     #quiz_wrapper {
@@ -391,10 +404,6 @@ classroomRedirect="/teacher_classroom_list"
         flex-wrap: nowrap;
         margin-left: 2em;
         margin-bottom: 2em;
-    }
-
-    .quiz {
-        width: 18em;
     }
 
     .closes_wrapper {
@@ -412,10 +421,6 @@ classroomRedirect="/teacher_classroom_list"
     .close_quiz:hover , .quiz_remove:hover {
         color: red;
     }   
-
-    .quiz:hover {
-        color: blue
-    }
 
     #add_quiz_wrapper {
         display: flex;
@@ -457,6 +462,55 @@ classroomRedirect="/teacher_classroom_list"
 
     #AddQuizName, #datepicker {
         margin-right: 0.5em
+    }
+
+    .student_remove, .quiz_remove {
+        text-align: center;
+        width: 6em;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
+    .student_remove:hover, .quiz_remove:hover {
+        color: red;
+    }
+    .student_remove:active, .quiz_remove:active {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
+    }
+
+    .quiz {
+        width: 10em;
+        margin-right: 8em;
+        text-align: center;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
+
+    .quiz:active, #AddQuizButton:active, #AddStudentButton:active  {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
+    }
+
+    .quiz:hover, #AddQuizButton:hover, #AddStudentButton:hover{
+        border: 1px solid rgba(0, 0, 255, 0.2);
+        color: blue;
+    }
+
+    #AddQuizButton, #AddStudentButton {
+        width: 4em;
+        text-align: center;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
+    #AddStudentButton {
+        margin-left:5.6em;
+        margin-top: 0.5em;
     }
 </style>
 

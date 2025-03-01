@@ -1,5 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import type {Profile} from 'passport-google-oauth20';
 import 'dotenv-esm/config';
 import {sequelize, ProgUser} from './models.js'
 import { profileEnd } from 'node:console';
@@ -24,10 +25,10 @@ passport.use(
     async (req, accessToken, refreshToken, profile, done) => {
         try {
             if (req.session.position) {
-                const profileEmail: string | null = profile.emails?.[0].value || null 
+                const profileEmail: string | null = profile.emails?.[0].value || null // Parse the users email
                 if (profileEmail){
                     let user: PassportUser | null = await ProgUser.findOne({ where: { email: profileEmail} });
-                    const position:string = req.session.position
+                    const position: string = req.session.position 
                     // Check if the user already exists in the database
                     if (!user) {
                         // Create a new user if not found 
@@ -44,7 +45,7 @@ passport.use(
                         return done("User already registered with different role")
 
                     } else if(user.isPending) {
-                        //User exists but is pending, no need to update email
+                        // User exists but is pending, no need to update email
                         try {
                             user.googleId=  profile.id;
                             user.name = profile.displayName;
@@ -69,9 +70,8 @@ passport.use(
     })
 );
 
-// @ts-ignore
 passport.serializeUser(((user: PassportUser, done: (err: any, id?: number) => void) => {
-    done(null, user.id);  // Use type assertion
+    done(null, user.id); 
 }));
 
 passport.deserializeUser(async (id : number, done) => {

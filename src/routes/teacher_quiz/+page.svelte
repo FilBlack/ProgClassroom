@@ -4,13 +4,15 @@
     import { onMount, onDestroy } from 'svelte'
     import { get } from 'svelte/store'
     import CodeMirror from 'svelte-codemirror-editor'
-    import { javascript } from '@codemirror/lang-javascript'
+    import { javascript } from '@codemirror/lang-javascript'    
+    import type { LanguageSupport } from '@codemirror/language'
 
-
-    let extensions = [
+    // Define the language for the codemirro editor
+    let extensions: LanguageSupport[] = [
         javascript(),
     ];
 
+    // Define all the necessary interfaces for typescript 
     interface Quiz {
         id:number;
         f_classroom_id: number;
@@ -31,21 +33,21 @@
         points: number | null;
         graded: boolean;
     }
-
-    async function getQuizAndConnectionById(quizId: number) {
-        const studentEmail = sessionStorage.getItem("currentStudentEmail")
+    
+    // Get the quiz information and the student quiz connection data
+    async function getQuizAndConnectionById(quizId: number) : Promise<[Quiz, StudentQuiz]> {
+        const studentEmail: string = String(sessionStorage.getItem("currentStudentEmail"))
         try {
-            const response = await fetch(`/getQuizById?quizId=${quizId}`);
+            const response: Response = await fetch(`/getQuizById?quizId=${quizId}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const quiz = await response.json();
-            const response2 = await fetch(`/getQuizStudentConnection?quizId=${quizId}&studentEmail=${studentEmail}`);
-            console.log(response2)
+            const quiz: Quiz = await response.json();
+            const response2: Response = await fetch(`/getQuizStudentConnection?quizId=${quizId}&studentEmail=${studentEmail}`);
             if (!response2.ok) {
                 throw new Error(`HTTP error! status: ${response2.status}`);
             }
-            const quizConnection = await response2.json();
+            const quizConnection: StudentQuiz = await response2.json();
             return [quiz, quizConnection];
         } catch (error) {
             console.error('Error:', error);
@@ -53,9 +55,11 @@
         }
     }
 
+    // Submit the teacher's comment 
     function submitComment() {
-        const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
-        const currentStudentEmail = String(sessionStorage.getItem('currentStudentEmail'))
+        const currentQuizId: number = Number(sessionStorage.getItem('currentQuiz'));
+        const currentStudentEmail: string = String(sessionStorage.getItem('currentStudentEmail'))
+        // Post the comment data to the server
         fetch('/submitQuizComment', {
             method: 'POST',
             headers: {
@@ -75,9 +79,10 @@
         .catch(error => console.error('Error:', error));
     }
 
+    // Unsubmit the teacher's 
     function unsubmitComment() {
-        const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));
-        const currentStudentEmail = String(sessionStorage.getItem('currentStudentEmail'))
+        const currentQuizId: number = Number(sessionStorage.getItem('currentQuiz'));
+        const currentStudentEmail: string = String(sessionStorage.getItem('currentStudentEmail'))
         fetch('/unsubmitQuizComment', {
             method: 'POST',
             headers: {
@@ -97,16 +102,18 @@
         .catch(error => console.error('Error:', error));
     }
 
-    let code: string = $state("")
+    let code: string = $state("") // Stores the code for the code editor
     let quiz: Quiz | null = $state()
-    let quizConnection: StudentQuiz = $state()
-    let commentSubmitted: boolean = $state(false)
-    let commentText: string = $state()
-    let teacherPoints: number = $state()
+    let quizConnection: StudentQuiz | null = $state()
+    let commentSubmitted: boolean = $state(false) // If the coomment is submitted
+    let commentText: string = $state() // The comment text from the teacher
+    let teacherPoints: number = $state() // The points the teacher has given
     onMount(async () => {
         try {
-            const currentQuizId = Number(sessionStorage.getItem('currentQuiz'));;
+            // Get the quiz data and update the stores based on the current quiz 
+            const currentQuizId : number = Number(sessionStorage.getItem('currentQuiz'));;
             [quiz, quizConnection] = await getQuizAndConnectionById(currentQuizId)
+            // Check if the quiz has been submitted before that 
             commentSubmitted = quizConnection.graded
             if (quizConnection.answered) {
                 code = quizConnection.answer
@@ -156,11 +163,11 @@ classroomRedirect="/teacher_classroom_list"
                 <label for="teacherPoints">Points (max {quiz.max_points}): </label>
                 <input bind:value={teacherPoints} type="number" name="teacherPoints" id="teacherPoints" disabled={commentSubmitted}>
             </div>
-            <div id="submission">
+            <div>
                 {#if commentSubmitted}
-                    <button onclick={unsubmitComment}>Unsubmit</button>
+                    <button class="submission" onclick={unsubmitComment}>Unsubmit</button>
                 {:else}
-                    <button onclick={submitComment}>Submit</button>
+                    <button  class="submission"onclick={submitComment}>Submit</button>
                 {/if}
             </div>
         </div>
@@ -186,7 +193,7 @@ classroomRedirect="/teacher_classroom_list"
         display: flex;
         flex-direction: column;
     }
-    #comment, #points, #submission {
+    #comment, #points {
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -202,7 +209,25 @@ classroomRedirect="/teacher_classroom_list"
         margin-right: 0.5em
     }
 
-    #submission:hover {
-        color:blue
+    .submission:active  {
+        transform: scale(0.98);
+        box-shadow: 2px 1px 5px 1px rgba(0, 0, 0, 0.14);
+    }
+
+    .submission:hover{
+        border: 1px solid rgba(0, 0, 255, 0.2);
+        color: blue;
+    }
+
+    .submission {
+        width: 5em;
+        text-align: center;
+        border: 1px solid rgb(0,0,0,0.2);
+        border-radius: 10px;
+        box-sizing: content-box;
+        box-shadow: 3px 2px 10px -2px rgba(0, 0, 0, 0.34);
+    }
+    .submission {
+        margin-top: 0.5em;
     }
 </style>

@@ -1,12 +1,12 @@
 <script lang="ts">
     
     import { onMount } from 'svelte';
-    export let classroomRedirect: string;
-    let isRoot = false;
-    let _mounted:boolean = false
+    export let classroomRedirect: string; // The home url changes based on the position of the user so we pass it on as props 
+    let isRoot: boolean = false; // If we are in the root directory
+    let _mounted: boolean = false
     onMount(() => {
         isRoot = window.location.pathname === "/";
-        _mounted = true
+        _mounted = true // If all the components are mounted
     });
 </script>
 
