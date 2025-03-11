@@ -11,7 +11,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 };
 var _Svelte4Component_events, _Svelte4Component_instance, _BaseProvider_use_hashes, _BaseProvider_script_needs_csp, _BaseProvider_script_src_needs_csp, _BaseProvider_script_src_elem_needs_csp, _BaseProvider_style_needs_csp, _BaseProvider_style_src_needs_csp, _BaseProvider_style_src_attr_needs_csp, _BaseProvider_style_src_elem_needs_csp, _BaseProvider_directives, _BaseProvider_script_src, _BaseProvider_script_src_elem, _BaseProvider_style_src, _BaseProvider_style_src_attr, _BaseProvider_style_src_elem, _BaseProvider_nonce, _Server_options, _Server_manifest;
 import { d as define_property, a as array_from, g as get_descriptor, s as safe_equals, i as is_array, e as equals, b as decode_pathname, h as has_data_suffix, c as strip_data_suffix, f as decode_params, n as normalize_path, j as disable_search, w as writable, k as add_data_suffix, m as make_trackable, r as readable, l as resolve } from './chunks/exports-CYw-LBl3.js';
-import { r as render, H as HYDRATION_START, a as HYDRATION_ERROR, b as HYDRATION_END, p as push$1, s as setContext, c as pop$1 } from './chunks/index-oK0KtCKN.js';
+import { r as render, H as HYDRATION_START, a as HYDRATION_ERROR, b as HYDRATION_END, p as push$1, s as setContext, c as pop$1 } from './chunks/index-asTl_DQo.js';
 const BROWSER = false;
 let base = "";
 let assets = base;
@@ -1424,7 +1424,7 @@ const options = {
     root,
     service_worker: false,
     templates: {
-        app: ({ head, body, assets: assets2, nonce, env }) => '<!doctype html>\n<html lang="en">\n	<head>\n		<meta charset="utf-8" />\n		<link rel="icon" href="' + assets2 + '/favicon.png" />\n		<meta name="viewport" content="width=device-width, initial-scale=1" />\n		' + head + '\n	</head>\n	<body data-sveltekit-preload-data="hover">\n		<div style="display: contents">' + body + "</div>\n	</body>\n</html>\n",
+        app: ({ head, body, assets: assets2, nonce, env }) => '<!doctype html>\n<html lang="en">\n	<head>\n		<meta charset="utf-8" />\n		<link rel="icon" href="' + assets2 + '/favicon.svg" />\n		<meta name="viewport" content="width=device-width, initial-scale=1" />\n		' + head + '\n	</head>\n	<body data-sveltekit-preload-data="hover">\n		<div style="display: contents">' + body + "</div>\n	</body>\n</html>\n",
         error: ({ status, message }) => '<!doctype html>\n<html lang="en">\n	<head>\n		<meta charset="utf-8" />\n		<title>' + message + `</title>
 
 		<style>
@@ -1496,7 +1496,7 @@ const options = {
 		<div class="error">
 			<span class="status">` + status + '</span>\n			<div class="message">\n				<h1>' + message + "</h1>\n			</div>\n		</div>\n	</body>\n</html>\n"
     },
-    version_hash: "1ut3hld"
+    version_hash: "e8pbg2"
 };
 async function get_hooks() {
     let handle;
@@ -3694,7 +3694,26 @@ class Csp {
      */
     constructor({ mode, directives, reportOnly }, { prerender }) {
         /** @readonly */
-        this.nonce = generate_nonce();
+        Object.defineProperty(this, "nonce", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: generate_nonce()
+        });
+        /** @type {CspProvider} */
+        Object.defineProperty(this, "csp_provider", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** @type {CspReportOnlyProvider} */
+        Object.defineProperty(this, "report_only_provider", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         const use_hashes = mode === "hash" || mode === "auto" && prerender;
         this.csp_provider = new CspProvider(use_hashes, directives, this.nonce);
         this.report_only_provider = new CspReportOnlyProvider(use_hashes, reportOnly, this.nonce);

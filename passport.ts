@@ -29,9 +29,9 @@ passport.use(
                 if (profileEmail){
                     let user: PassportUser | null = await ProgUser.findOne({ where: { email: profileEmail} });
                     const position: string = req.session.position 
-                    // Check if the user already exists in the database
+                    /** Check if the user already exists in the database */
                     if (!user) {
-                        // Create a new user if not found 
+                        /** Create a new user if not found  */
                         user = await ProgUser.create({
                             googleId: profile.id,
                             name: profile.displayName,
@@ -41,11 +41,11 @@ passport.use(
                             isPending: false,
                         });
                     } else if(user.position !== position){
-                        // User is loggin in as a different role 
+                        /** User is loggin in as a different role  */
                         return done("User already registered with different role")
 
                     } else if(user.isPending) {
-                        // User exists but is pending, no need to update email
+                        /** User exists but is pending, no need to update email */
                         try {
                             user.googleId=  profile.id;
                             user.name = profile.displayName;
@@ -69,11 +69,12 @@ passport.use(
         }
     })
 );
-
+/** Serialize the user for later use  */
 passport.serializeUser(((user: PassportUser, done: (err: any, id?: number) => void) => {
     done(null, user.id); 
 }));
 
+/** Deseralize the user */
 passport.deserializeUser(async (id : number, done) => {
     try {
         const user : PassportUser | null = await ProgUser.findByPk(id);  // Retrieve the user by primary key

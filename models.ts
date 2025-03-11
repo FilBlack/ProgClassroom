@@ -10,7 +10,7 @@ const connection = await mysql.createConnection({
   password: process.env.DATABASE_PASSWORD
 });
 
-// Create the database if it doesn't exist
+/** Create the database if it doesn't exist */
 await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DATABASE_NAME}\`;`);
 await connection.end();
 
@@ -31,7 +31,7 @@ if ((process.env.DEV === "true")) {
   }); 
 }
 
-// Define User model with proper types
+/** Define User model with proper types */
 class ProgUser extends Model<InferAttributes<ProgUser>, InferCreationAttributes<ProgUser>> {
   declare id: CreationOptional<number>; // Auto-incremented ID
   declare googleId: string;
@@ -80,7 +80,7 @@ ProgUser.init(
     modelName: 'User',
   }
 );
-// Define Classroom model
+/** Define Classroom model */
 class Classroom extends Model<InferAttributes<Classroom>, InferCreationAttributes<Classroom>> {
   declare id: CreationOptional<number>;
   declare name: string;
@@ -113,7 +113,7 @@ Classroom.init(
   }
 );
 
-// Define Quiz model
+/** Define Quiz model */
 class Quiz extends Model<InferAttributes<Quiz>, InferCreationAttributes<Quiz>> {
   declare id: CreationOptional<number>;
   declare f_classroom_id: number;
@@ -170,7 +170,7 @@ Quiz.init(
   }
 );
 
-// Define QuizStudent model
+/** Define QuizStudent model */
 class QuizStudent extends Model<InferAttributes<QuizStudent>, InferCreationAttributes<QuizStudent>> {
   declare id: CreationOptional<number>;
   declare f_student_email: string;
@@ -237,7 +237,7 @@ QuizStudent.init(
   }
 );
 
-// Define ClassroomStudents model
+/** Define ClassroomStudents model */
 class ClassroomStudents extends Model<InferAttributes<ClassroomStudents>, InferCreationAttributes<ClassroomStudents>> {
   declare id: CreationOptional<number>;
   declare f_classroom_id: number;
@@ -274,10 +274,10 @@ ClassroomStudents.init(
   }
 );
 
-// Sync models with database
+/** Sync models with database */
 (async () => {
   try {
-    // Only run PRAGMA commands if we're using SQLite.
+    /** Only run PRAGMA commands if we're using SQLite. */
     if (sequelize.getDialect() === 'sqlite') {
       await sequelize.query('PRAGMA foreign_keys = OFF');
     }
